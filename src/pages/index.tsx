@@ -1,22 +1,34 @@
 import React from "react";
-import { Inter } from "next/font/google";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { InfoCircledIcon, ReloadIcon } from "@radix-ui/react-icons"
+import { InfoCircledIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { fullMatchingDigits } from "@/utils/fetch";
 
-const inter = Inter({ subsets: ["latin"] });
+interface HomeProps {
+  isDarkMode: boolean;
+}
 
-export default function Home() {
-  const [allowMatchingDigits, setAllowMatchingDigits] = React.useState<boolean>(false);
+export const Home: React.FC<HomeProps> = ({ isDarkMode }) => {
+  const [emailAddress, setEmailAddress] = React.useState<string>('');
+  const [password, setPassword] = React.useState<string>('');
   const [customDiscriminators, setCustomDiscriminators] = React.useState<string>("");
+  
+  const [allowMatchingDigits, setAllowMatchingDigits] = React.useState<boolean>(false);
   const [discriminators, setDiscriminators] = React.useState<string[]>([]);
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
-
+  
   const handleStart = () => {
     if (isLoading) return;
+    if (emailAddress.trim() === '') {
+      return;
+    } else if (password.trim() === '') {
+      return;
+    } else if (discriminators.length === 0) {
+      return;
+    }
+
     setIsLoading(true);
 
     console.log("discriminators", discriminators, customDiscriminators, allowMatchingDigits);
@@ -63,37 +75,75 @@ export default function Home() {
     setDiscriminators(newDiscriminators);
   };
 
+  const buttonClassname = isDarkMode ? "bg-blue-500 hover:bg-blue-600 text-white" : "bg-theme hover:bg-[#f7c0c3]";
+  const inputClassname = isDarkMode
+    ? "p-2 border-none focus:outline-none font-semibold"
+    : "p-2 border-none focus:outline-none font-semibold bg-[#B7FDB2] text-[#976A6D]";
+  const switchClassname = isDarkMode
+    ? "data-[state=checked]:bg-blue-500"
+    : "data-[state=checked]:bg-theme data-[state=unchecked]:bg-[#FEE7E9]";
+
   return (
-    <main className={`bg-black text-white flex min-h-screen flex-col items-center pt-12 ${inter.className}`}>
+    <main className="flex flex-col items-center pt-12">
       <div className="flex flex-col w-full max-w-[500px]">
-        <Label className="mb-2 block text-base text-[#B2B7FD] text-white" htmlFor="custom-discriminator">
-          Custom Discriminator
-        </Label>
-        <div className="flex">
+        <div className="mb-2">
+          <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="email-address">
+            Email
+          </Label>
           <Input
             onChange={handleChangeCustomDiscriminator}
-            className="p-2 bg-[#B7FDB2] border-none text-[#976A6D] focus:outline-none font-semibold"
+            className={inputClassname}
             value={customDiscriminators}
             type="text"
-            id="custom-discriminator"
+            id="email-address"
           />
-          <Button className="ml-2 bg-theme hover:bg-[#f7c0c3]" onClick={handleAddDiscriminator}>
-            Add
-          </Button>
+        </div>
+        <div className="mb-2">
+          <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="password">
+            Password
+          </Label>
+          <Input
+            onChange={handleChangeCustomDiscriminator}
+            className={inputClassname}
+            value={customDiscriminators}
+            type="text"
+            id="password"
+          />
+        </div>
+        <div className="mb-2">
+          <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="custom-discriminator">
+            Custom Discriminator
+          </Label>
+          <div className="flex">
+            <Input
+              onChange={handleChangeCustomDiscriminator}
+              className={inputClassname}
+              value={customDiscriminators}
+              type="text"
+              id="custom-discriminator"
+            />
+            <Button className={`ml-2 ${buttonClassname}`} onClick={handleAddDiscriminator}>
+              Add
+            </Button>
+          </div>
         </div>
         <span className="text-sm text-gray-400">Separate each discriminator with a comma</span>
         <div>
           <div className="flex items-center mt-2">
-            <Switch checked={allowMatchingDigits} onCheckedChange={handleCheckAllowMatchingDigits} />
+            <Switch
+              className={switchClassname}
+              checked={allowMatchingDigits}
+              onCheckedChange={handleCheckAllowMatchingDigits}
+            />
             <Label className="ml-2" htmlFor="allow-matching-digits text-center">
               Allow Matching Digits
             </Label>
           </div>
           <span className="text-sm text-gray-400 mt-1">Ex. 6666, 8888, 2222</span>
         </div>
-        <Button className="mt-2" onClick={handleStart} disabled={isLoading}>
+        <Button className={`mt-2 ${buttonClassname}`} onClick={handleStart} disabled={isLoading}>
           {isLoading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />}
-          {isLoading ? 'Loading' : 'Start'}
+          {isLoading ? "Loading" : "Start"}
         </Button>
         <div className="flex items-center text-sm text-gray-400 mt-2">
           <InfoCircledIcon />
@@ -112,7 +162,9 @@ export default function Home() {
       </div>
     </main>
   );
-}
+};
+
+export default Home;
 
 const CircleMinus = () => (
   <svg
