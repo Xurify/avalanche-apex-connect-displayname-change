@@ -6,8 +6,6 @@ import { useTheme } from "next-themes";
 const ThemeSwitcher = () => {
   const { systemTheme, theme, setTheme } = useTheme();
 
-  console.log("systemTheme", systemTheme, theme);
-
   const renderThemeChanger = () => {
     const currentTheme = theme === "system" ? systemTheme : theme;
 

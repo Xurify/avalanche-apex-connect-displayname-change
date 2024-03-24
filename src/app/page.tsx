@@ -1,18 +1,15 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
 
 import { InfoCircledIcon, ReloadIcon } from "@radix-ui/react-icons";
-import { EyeIcon, EyeOffIcon, MoonIcon, SunIcon } from "lucide-react";
-import { useDarkMode } from "usehooks-ts";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { fullMatchingDigits } from "@/utils/fetch";
-import { cn } from "@/lib/utils";
 import { ChangeDisplayNameResponse, Errors } from "./api/change-displayname/route";
 
 export default function Page() {
@@ -122,7 +119,7 @@ export default function Page() {
   const switchClassname =
     "data-[state=checked]:bg-theme data-[state=unchecked]:bg-[#FEE7E9] dark:data-[state=checked]:bg-blue-500 dark:data-[state=unchecked]:bg-input";
 
-  const generateInputClassname = (hasError?: boolean) => {
+  const generateInputClassname = (hasError: boolean) => {
     return hasError ? inputClassname + " border border-red-500" : inputClassname;
   };
 

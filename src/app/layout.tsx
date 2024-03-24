@@ -1,10 +1,10 @@
 import { Metadata } from "next";
 import { Inter } from "next/font/google";
 
-import "@/styles/globals.css";
 import Provider from "@/components/Provider";
 import { Header } from "@/components/Header";
-import { ThemeProvider } from "next-themes";
+
+import "@/styles/globals.css";
 
 export const metadata: Metadata = {
   title: "Home",
