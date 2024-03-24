@@ -27,19 +27,6 @@ export default function Page() {
 
   const [errorMessage, setErrorMessage] = React.useState<Errors | null>({});
 
-  const defaultValue = Boolean(localStorage?.getItem("usehooks-ts-dark-mode") || false);
-  const { isDarkMode, toggle } = useDarkMode({ defaultValue, initializeWithValue: false });
-
-  React.useEffect(() => {
-    if (isDarkMode && !document.body.classList.contains("dark")) {
-      document.body.classList.remove("light");
-      document.body.classList.add("dark");
-    } else if (!isDarkMode && document.body.classList.contains("dark")) {
-      document.body.classList.remove("dark");
-      document.body.classList.add("light");
-    }
-  }, [isDarkMode]);
-
   const collectErrors = (): Errors => {
     const newErrors: Errors = {};
     if (emailAddress.trim() === "") {
@@ -114,7 +101,7 @@ export default function Page() {
   };
 
   const handleAddDiscriminator = () => {
-    if (customDiscriminator.trim() === '') return;
+    if (customDiscriminator.trim() === "") return;
     if (!customDiscriminator.match(/^\d{4}$/)) return;
     setDiscriminators([...discriminators, customDiscriminator]);
     setCustomDiscriminator("");
@@ -140,120 +127,108 @@ export default function Page() {
   };
 
   return (
-    <div className={cn(`min-h-screen bg-[#edede9] text-[#9c9186] dark:bg-card dark:text-primary`)}>
-      <header className="flex items-center justify-between font-bold h-[70px] p-4 border-b border-[#9c9186] dark:border-gray-500">
-        <Link href="/">
-          <h1 className="">(Unofficial) Avalanche Apex Connect Nickname Changer</h1>
-        </Link>
-        <div className="flex items-center">
-          {isDarkMode ? <MoonIcon className="mr-2" /> : <SunIcon className="mr-2" />}
-          <Switch className={switchClassname} checked={isDarkMode} onCheckedChange={toggle} />
+    <main className="flex flex-col items-center p-4 pt-12">
+      <div className="flex flex-col w-full max-w-[500px]">
+        <div className="mb-2">
+          <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="email-address">
+            Email
+          </Label>
+          <Input
+            onChange={handleChangeEmailAddress}
+            className={generateInputClassname(!!errorMessage?.emailAddress)}
+            value={emailAddress}
+            type="text"
+            id="email-address"
+          />
         </div>
-      </header>
+        <div className="mb-2">
+          <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="password">
+            Password
+          </Label>
 
-      <main className="flex flex-col items-center p-4 pt-12">
-        <div className="flex flex-col w-full max-w-[500px]">
-          <div className="mb-2">
-            <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="email-address">
-              Email
-            </Label>
+          <div className="relative">
             <Input
-              onChange={handleChangeEmailAddress}
-              className={generateInputClassname(!!errorMessage?.emailAddress)}
-              value={emailAddress}
-              type="text"
-              id="email-address"
+              onChange={handleChangePassword}
+              className={generateInputClassname(!!errorMessage?.password)}
+              value={password}
+              type={isPasswordHidden ? "password" : "text"}
+              id="password"
             />
+            <button
+              type="button"
+              onClick={handleTogglePasswordHidden}
+              className="absolute top-0 end-0 p-3.5 rounded-e-md dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600"
+            >
+              {isPasswordHidden ? <EyeOffIcon size="0.95rem" /> : <EyeIcon size="0.95rem" />}
+            </button>
           </div>
-          <div className="mb-2">
-            <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="password">
-              Password
-            </Label>
-
-            <div className="relative">
-              <Input
-                onChange={handleChangePassword}
-                className={generateInputClassname(!!errorMessage?.password)}
-                value={password}
-                type={isPasswordHidden ? "password" : "text"}
-                id="password"
-              />
-              <button
-                type="button"
-                onClick={handleTogglePasswordHidden}
-                className="absolute top-0 end-0 p-3.5 rounded-e-md dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600"
-              >
-                {isPasswordHidden ? <EyeOffIcon size="0.95rem" /> : <EyeIcon size="0.95rem" />}
-              </button>
-            </div>
-          </div>
-          <div className="mb-2">
-            <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="custom-discriminator">
-              Custom Discriminator
-            </Label>
-            <div className="flex">
-              <Input
-                onChange={handleChangeCustomDiscriminator}
-                className={inputClassname}
-                value={customDiscriminator}
-                type="text"
-                id="custom-discriminator"
-              />
-              <Button className={`ml-2 ${buttonClassname}`} onClick={handleAddDiscriminator}>
-                Add
-              </Button>
-            </div>
-          </div>
-          <span className="text-sm text-[#9c9186]/70 dark:text-gray-400">Separate each discriminator with a comma</span>
-          <div>
-            <div className="flex items-center mt-2">
-              <Switch
-                className={switchClassname}
-                checked={allowMatchingDigits}
-                onCheckedChange={handleCheckAllowMatchingDigits}
-              />
-              <Label className="ml-2" htmlFor="allow-matching-digits text-center">
-                Allow Matching Digits
-              </Label>
-            </div>
-            <span className="text-sm text-[#9c9186]/70 dark:text-gray-400 mt-1">Ex. 6666, 8888, 2222</span>
-          </div>
-          <Button className={`mt-2 ${buttonClassname}`} onClick={handleStart} disabled={isLoading}>
-            {isLoading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />}
-            {isLoading ? "Loading" : "Start"}
-          </Button>
-          <div className="flex items-center text-sm text-[#9c9186]/70 dark:text-gray-400 mt-2">
-            <InfoCircledIcon />
-            <span className="ml-1">This process could take a while</span>
-          </div>
-          <ul className="list-of-discriminators flex flex-col gap-1.5 mt-2">
-            {discriminators.map((discriminator) => (
-              <li className="flex" key={discriminator}>
-                <button onClick={() => handleRemoveDiscriminator(discriminator)}>
-                  <CircleMinus />
-                </button>{" "}
-                <span className="ml-2">{discriminator}</span>
-              </li>
-            ))}
-          </ul>
         </div>
-
-        {errorMessage && (
-          <div className="flex flex-col gap-2 w-full  max-w-[500px]">
-            {Object.values(errorMessage).map((message) => (
-              <div
-                className="bg-red-100 dark:bg-red-50 border border-red-400 dark:border-red-400 px-2 py-1 rounded w-full"
-                key={message}
-              >
-                <span className="text-red-400 dark:text-red-400 text-sm">{message}</span>
-              </div>
-            ))}
+        <div className="mb-2">
+          <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="custom-discriminator">
+            Custom Discriminator
+          </Label>
+          <div className="flex">
+            <Input
+              onChange={handleChangeCustomDiscriminator}
+              className={inputClassname}
+              value={customDiscriminator}
+              type="text"
+              id="custom-discriminator"
+            />
+            <Button className={`ml-2 ${buttonClassname}`} onClick={handleAddDiscriminator}>
+              Add
+            </Button>
           </div>
-        )}
-      </main>
-    </div>
+        </div>
+        <span className="text-sm text-[#9c9186]/70 dark:text-gray-400">Separate each discriminator with a comma</span>
+        <div>
+          <div className="flex items-center mt-2">
+            <Switch
+              className={switchClassname}
+              checked={allowMatchingDigits}
+              onCheckedChange={handleCheckAllowMatchingDigits}
+            />
+            <Label className="ml-2" htmlFor="allow-matching-digits text-center">
+              Allow Matching Digits
+            </Label>
+          </div>
+          <span className="text-sm text-[#9c9186]/70 dark:text-gray-400 mt-1">Ex. 6666, 8888, 2222</span>
+        </div>
+        <Button className={`mt-2 ${buttonClassname}`} onClick={handleStart} disabled={isLoading}>
+          {isLoading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />}
+          {isLoading ? "Loading" : "Start"}
+        </Button>
+        <div className="flex items-center text-sm text-[#9c9186]/70 dark:text-gray-400 mt-2">
+          <InfoCircledIcon />
+          <span className="ml-1">This process could take a while</span>
+        </div>
+        <ul className="list-of-discriminators flex flex-col gap-1.5 mt-2">
+          {discriminators.map((discriminator) => (
+            <li className="flex" key={discriminator}>
+              <button onClick={() => handleRemoveDiscriminator(discriminator)}>
+                <CircleMinus />
+              </button>{" "}
+              <span className="ml-2">{discriminator}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {errorMessage && (
+        <div className="flex flex-col gap-2 w-full  max-w-[500px]">
+          {Object.values(errorMessage).map((message) => (
+            <div
+              className="bg-red-100 dark:bg-red-50 border border-red-400 dark:border-red-400 px-2 py-1 rounded w-full"
+              key={message}
+            >
+              <span className="text-red-400 dark:text-red-400 text-sm">{message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </main>
   );
-};
+}
 
 const CircleMinus = () => (
   <svg
