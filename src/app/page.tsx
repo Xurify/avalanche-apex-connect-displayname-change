@@ -13,12 +13,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { fullMatchingDigits } from "@/utils/fetch";
 import { cn } from "@/lib/utils";
-import { Errors } from "./api/change-displayname/route";
+import { ChangeDisplayNameResponse, Errors } from "./api/change-displayname/route";
 
 export const Page: React.FC = () => {
   const [emailAddress, setEmailAddress] = React.useState<string>("");
   const [password, setPassword] = React.useState<string>("");
-  const [customDiscriminators, setCustomDiscriminators] = React.useState<string>("");
+  const [customDiscriminator, setCustomDiscriminator] = React.useState<string>("");
 
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isPasswordHidden, setIsPasswordHidden] = React.useState<boolean>(true);
@@ -69,7 +69,7 @@ export const Page: React.FC = () => {
     setIsLoading(true);
 
     const combinedDiscriminators = allowMatchingDigits ? [...discriminators, ...fullMatchingDigits] : discriminators;
-    const body = JSON.stringify({ email: emailAddress, password, discriminators: combinedDiscriminators.join(",") });
+    const body = JSON.stringify({ email: emailAddress, password, discriminators: combinedDiscriminators.join(", ") });
 
     fetch("/api/change-displayname", {
       body,
@@ -79,14 +79,16 @@ export const Page: React.FC = () => {
       },
     })
       .then((res) => res.json())
-      .then((result: { error: Errors; token?: string }) => {
+      .then((result: ChangeDisplayNameResponse) => {
         setIsLoading(false);
         if (result.error) {
           console.error(result.error);
           setErrorMessage(result.error);
         } else {
-          const sound = new Audio("https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3");
-          sound.play();
+          if (result.success) {
+            const sound = new Audio("https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3");
+            sound.play();
+          }
           console.log(result);
         }
       });
@@ -104,7 +106,7 @@ export const Page: React.FC = () => {
 
   const handleChangeCustomDiscriminator = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setCustomDiscriminators(value);
+    setCustomDiscriminator(value);
   };
 
   const handleCheckAllowMatchingDigits = () => {
@@ -112,8 +114,10 @@ export const Page: React.FC = () => {
   };
 
   const handleAddDiscriminator = () => {
-    setDiscriminators([...discriminators, customDiscriminators]);
-    setCustomDiscriminators("");
+    if (customDiscriminator.trim() === '') return;
+    if (!customDiscriminator.match(/^\d{4}$/)) return;
+    setDiscriminators([...discriminators, customDiscriminator]);
+    setCustomDiscriminator("");
   };
 
   const handleRemoveDiscriminator = (discriminatorToRemove: string) => {
@@ -191,7 +195,7 @@ export const Page: React.FC = () => {
               <Input
                 onChange={handleChangeCustomDiscriminator}
                 className={inputClassname}
-                value={customDiscriminators}
+                value={customDiscriminator}
                 type="text"
                 id="custom-discriminator"
               />

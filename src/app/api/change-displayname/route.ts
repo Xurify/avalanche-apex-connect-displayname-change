@@ -1,7 +1,6 @@
-// Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { fetchDisplayName, getAuthorizationToken, postUpdateDisplayName } from "@/utils/fetch";
-import type { NextApiRequest, NextApiResponse } from "next";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextApiResponse } from "next";
+import { NextRequest } from "next/server";
 
 type Data = {
   token: string | null;
@@ -16,13 +15,11 @@ export type Errors = {
 };
 
 export const POST = async (req: NextRequest, res: NextApiResponse<Data>) => {
-  const { email, password, discriminators } = await req.json();
+  const { email = '', password = '', discriminators = '' }: { email: string; password: string; discriminators: string } = await req.json();
 
-  // TODO: Only allow an array of numbers, strip out anything that isn't a 4 digit number
+  const filteredDiscriminators = discriminators?.split(", ")?.filter((d: string) => /^\d{4}$/.test(d));
 
-  console.log(discriminators, email, password);
-
-  if (!discriminators) {
+  if (!filteredDiscriminators.length) {
     return Response.json({ error: { discriminators: "Discriminators field is invalid" } }, { status: 400 });
   } else if (!email) {
     return Response.json({ error: { emailAddress: "Email field is invalid" } }, { status: 400 });
@@ -38,14 +35,21 @@ export const POST = async (req: NextRequest, res: NextApiResponse<Data>) => {
 
   const splitDiscriminators = discriminators.split(", ");
 
-  return await handleChangeDisplayNameInterval(token, splitDiscriminators, 5);
+  return await handleChangeDisplayNameInterval(token, splitDiscriminators, 0.7);
 };
+
+export interface ChangeDisplayNameResponse {
+  error: Errors;
+  success?: boolean;
+  token?: string;
+  newDiscriminator?: string;
+}
 
 const handleChangeDisplayNameInterval = async (
   token: string,
   discriminators: string[],
   intervalTime: number = 1
-) => {
+): Promise<Response> => {
   return new Promise((resolve, reject) => {
     const changeDisplayNameInterval = setInterval(() => {
       if (!token) {
