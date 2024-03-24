@@ -39,7 +39,7 @@ export const Page: React.FC = () => {
     }
   }, [isDarkMode]);
 
-  const handleStart = (e: React.ChangeEvent<HTMLButtonElement>) => {
+  const handleStart = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setErrorMessage(null);
   
@@ -147,7 +147,6 @@ export const Page: React.FC = () => {
               type="text"
               id="email-address"
             />
-            <span className="text-red-400">{errorMessage}</span>
           </div>
           <div className="mb-2">
             <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="password">
@@ -221,6 +220,8 @@ export const Page: React.FC = () => {
             ))}
           </ul>
         </div>
+
+        <span className="text-red-400">{errorMessage}</span>
       </main>
     </div>
   );
