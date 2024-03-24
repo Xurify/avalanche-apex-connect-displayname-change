@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { fullMatchingDigits } from "@/utils/fetch";
 import { cn } from "@/lib/utils";
+import { Errors } from "./api/change-displayname/route";
 
 export const Page: React.FC = () => {
   const [emailAddress, setEmailAddress] = React.useState<string>("");
@@ -24,7 +25,7 @@ export const Page: React.FC = () => {
   const [allowMatchingDigits, setAllowMatchingDigits] = React.useState<boolean>(false);
   const [discriminators, setDiscriminators] = React.useState<string[]>([]);
 
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = React.useState<Errors | null>({});
 
   const defaultValue = Boolean(localStorage?.getItem("usehooks-ts-dark-mode") || false);
   const { isDarkMode, toggle } = useDarkMode({ defaultValue, initializeWithValue: false });
@@ -39,25 +40,36 @@ export const Page: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  const collectErrors = (): Errors => {
+    const newErrors: Errors = {};
+    if (emailAddress.trim() === "") {
+      newErrors.emailAddress = "Email address is missing";
+    }
+    if (password.trim() === "") {
+      newErrors.password = "Password is missing";
+    }
+    if (discriminators.length === 0) {
+      newErrors.discriminators = "No discriminators were added";
+    }
+    return newErrors;
+  };
+
   const handleStart = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setErrorMessage(null);
-  
+
     if (isLoading) return;
-    if (emailAddress.trim() === "") {
-      return;
-    } else if (password.trim() === "") {
-      return;
-    } else if (discriminators.length === 0) {
+
+    const newErrors = collectErrors();
+    if (Object.keys(newErrors).length > 0) {
+      setErrorMessage(newErrors);
       return;
     }
 
     setIsLoading(true);
 
-    console.log("discriminators", discriminators, customDiscriminators, allowMatchingDigits);
-
     const combinedDiscriminators = allowMatchingDigits ? [...discriminators, ...fullMatchingDigits] : discriminators;
-    const body = JSON.stringify({ discriminators: combinedDiscriminators.join(",") });
+    const body = JSON.stringify({ email: emailAddress, password, discriminators: combinedDiscriminators.join(",") });
 
     fetch("/api/change-displayname", {
       body,
@@ -67,7 +79,7 @@ export const Page: React.FC = () => {
       },
     })
       .then((res) => res.json())
-      .then((result: { error: string; token?: string }) => {
+      .then((result: { error: Errors; token?: string }) => {
         setIsLoading(false);
         if (result.error) {
           console.error(result.error);
@@ -77,9 +89,6 @@ export const Page: React.FC = () => {
           sound.play();
           console.log(result);
         }
-      })
-      .catch((error) => {
-        console.log("ERROR", error);
       });
   };
 
@@ -118,9 +127,13 @@ export const Page: React.FC = () => {
 
   const buttonClassname = "bg-theme dark:bg-blue-500 hover:bg-[#f7c0c3] dark:hover:bg-blue-600 dark:text-white";
   const inputClassname =
-    "p-2 border-none focus:outline-none font-semibold bg-[#d6ccc2] dark:bg-white/10 text-[#976A6D] dark:text-white";
+    "p-2 focus:outline-none font-semibold bg-[#d6ccc2] dark:bg-white/10 text-[#976A6D] dark:text-white";
   const switchClassname =
     "data-[state=checked]:bg-theme data-[state=unchecked]:bg-[#FEE7E9] dark:data-[state=checked]:bg-blue-500 dark:data-[state=unchecked]:bg-input";
+
+  const generateInputClassname = (hasError?: boolean) => {
+    return hasError ? inputClassname + " border border-red-500" : inputClassname;
+  };
 
   return (
     <div className={cn(`min-h-screen bg-[#edede9] text-[#9c9186] dark:bg-card dark:text-primary`)}>
@@ -142,7 +155,7 @@ export const Page: React.FC = () => {
             </Label>
             <Input
               onChange={handleChangeEmailAddress}
-              className={inputClassname}
+              className={generateInputClassname(!!errorMessage?.emailAddress)}
               value={emailAddress}
               type="text"
               id="email-address"
@@ -156,7 +169,7 @@ export const Page: React.FC = () => {
             <div className="relative">
               <Input
                 onChange={handleChangePassword}
-                className={inputClassname}
+                className={generateInputClassname(!!errorMessage?.password)}
                 value={password}
                 type={isPasswordHidden ? "password" : "text"}
                 id="password"
@@ -221,7 +234,18 @@ export const Page: React.FC = () => {
           </ul>
         </div>
 
-        <span className="text-red-400">{errorMessage}</span>
+        {errorMessage && (
+          <div className="flex flex-col gap-2 w-full  max-w-[500px]">
+            {Object.values(errorMessage).map((message) => (
+              <div
+                className="bg-red-100 dark:bg-red-50 border border-red-400 dark:border-red-400 px-2 py-1 rounded w-full"
+                key={message}
+              >
+                <span className="text-red-400 dark:text-red-400 text-sm">{message}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   );

@@ -1,25 +1,21 @@
-// const EMAIL = "games@xurify.com";
-// const PASSWORD = "RpzqioPHL23hhxvkTr6T3ci4F";
-// const NICKNAME = "Xurify";
-
 export const fullMatchingDigits = ["0000", "1111", "2222", "3333", "4444", "5555", "6666", "7777", "8888", "9999"];
 
 export interface AccountResponse {
-account: {
-  id: string;
-  email: string;
-  nick_name: string;
-  updated_at: Date;
-  state: number;
-  promo_email_ok: boolean;
-  language: string;
-  mark_delete_ts: MarkDeleteTimestamp;
-  temporary: boolean;
-  email_verified: boolean;
-  country_code: string;
-  nickname_number: number;
-  display_name: string;
-}
+  account: {
+    id: string;
+    email: string;
+    nick_name: string;
+    updated_at: Date;
+    state: number;
+    promo_email_ok: boolean;
+    language: string;
+    mark_delete_ts: MarkDeleteTimestamp;
+    temporary: boolean;
+    email_verified: boolean;
+    country_code: string;
+    nickname_number: number;
+    display_name: string;
+  };
 }
 
 export interface MarkDeleteTimestamp {

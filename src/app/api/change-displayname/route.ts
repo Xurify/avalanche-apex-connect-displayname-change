@@ -1,31 +1,33 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { fetchDisplayName, getAuthorizationToken, postUpdateDisplayName } from "@/utils/fetch";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 type Data = {
   token: string | null;
   discriminators?: string[];
-  error?: string | null;
+  error?: Errors | null;
+};
+
+export type Errors = {
+  emailAddress?: string;
+  password?: string;
+  discriminators?: string;
 };
 
 export const POST = async (req: NextRequest, res: NextApiResponse<Data>) => {
   const { email, password, discriminators } = await req.json();
 
-  // const email: string = req.body?.email?.trim() || "";
-  // const password: string = req.body?.password?.trim() || "";
-  // const discriminators: string = req.body?.discriminators?.trim() || "";
-
   // TODO: Only allow an array of numbers, strip out anything that isn't a 4 digit number
 
-  console.log(discriminators, password);
+  console.log(discriminators, email, password);
 
   if (!discriminators) {
-    return Response.json({ error: "Discriminators field is invalid" }, { status: 400 });
+    return Response.json({ error: { discriminators: "Discriminators field is invalid" } }, { status: 400 });
   } else if (!email) {
-    return Response.json({ error: "Email field is invalid" }, { status: 400 });
+    return Response.json({ error: { emailAddress: "Email field is invalid" } }, { status: 400 });
   } else if (!password) {
-    return Response.json({ error: "Password field is invalid" }, { status: 400 });
+    return Response.json({ error: { password: "Password field is invalid" } }, { status: 400 });
   }
 
   const token = await getAuthorizationToken(email, password);
@@ -36,30 +38,35 @@ export const POST = async (req: NextRequest, res: NextApiResponse<Data>) => {
 
   const splitDiscriminators = discriminators.split(", ");
 
-  handleChangeDisplayNameInterval(token, splitDiscriminators, 0.7);
-  return Response.json({ discriminators: splitDiscriminators, token }, { status: 200 });
+  return await handleChangeDisplayNameInterval(token, splitDiscriminators, 5);
 };
 
-const handleChangeDisplayNameInterval = (token: string, discriminators: string[], intervalTime: number = 1) => {
-  const changeDisplayNameInterval = setInterval(() => {
-    if (!token) {
-      clearInterval(changeDisplayNameInterval);
-      console.log("WHERE IS THE BEARER TOKEN?!?! 😡");
-      return;
-    }
-
-    fetchDisplayName(token).then((displayName) => {
-      console.log("displayName", displayName);
-      const nickname = displayName?.split("#")?.[0] || "";
-      const discriminator = displayName?.split("#")?.[1] || "";
-      if (discriminators.includes(discriminator)) {
+const handleChangeDisplayNameInterval = async (
+  token: string,
+  discriminators: string[],
+  intervalTime: number = 1
+) => {
+  return new Promise((resolve, reject) => {
+    const changeDisplayNameInterval = setInterval(() => {
+      if (!token) {
         clearInterval(changeDisplayNameInterval);
-      } else {
-        console.log("postUpdateDisplayName");
-        return;
-        postUpdateDisplayName(token, nickname);
+        console.error("Bearer token is missing");
+        reject(Response.json({ error: "Bearer token is missing" }, { status: 400 }));
       }
-    });
-    // Be generous here please :)
-  }, intervalTime * 1000);
+
+      fetchDisplayName(token).then((displayName) => {
+        const nickname = displayName?.split("#")?.[0] || "";
+        const discriminator = displayName?.split("#")?.[1] || "";
+
+        if (discriminators.includes(discriminator)) {
+          clearInterval(changeDisplayNameInterval);
+          resolve(Response.json({ displayName, newDiscriminator: discriminator }, { status: 200 }));
+        } else {
+          console.log("postUpdateDisplayName", displayName);
+          postUpdateDisplayName(token, nickname);
+          resolve(Response.json({ newDiscriminator: discriminator }, { status: 200 }));
+        }
+      });
+    }, intervalTime * 1000);
+  });
 };
