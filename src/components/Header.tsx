@@ -5,6 +5,7 @@ import { useDarkMode } from "usehooks-ts";
 import { Switch } from "./ui/switch";
 import { MoonIcon, SunIcon } from "lucide-react";
 import { useTheme } from "next-themes";
+import ThemeSwitcher from "./ThemeSwitcher";
 
 export const Header = () => {
   const defaultValue = false;
@@ -21,8 +22,9 @@ export const Header = () => {
         <h1 className="">(Unofficial) Avalanche Apex Connect Nickname Changer</h1>
       </Link>
       <div className="flex items-center">
-        {isDarkMode ? <MoonIcon className="mr-2" /> : <SunIcon className="mr-2" />}
-        <Switch className={switchClassname} checked={isDarkMode} onCheckedChange={toggle} />
+        {/* {isDarkMode ? <MoonIcon className="mr-2" /> : <SunIcon className="mr-2" />}
+        <Switch className={switchClassname} checked={isDarkMode} onCheckedChange={toggle} /> */}
+        <ThemeSwitcher />
       </div>
     </header>
   );
