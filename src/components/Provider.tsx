@@ -4,7 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { useState, useEffect } from "react";
 
 type Props = {
-  children: string | React.JSX.Element | React.JSX.Element[];
+  children: React.ReactNode;
 };
 
 const Provider = ({ children }: Props) => {
