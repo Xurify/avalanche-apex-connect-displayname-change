@@ -1,6 +1,7 @@
 // Next.js API route support: https://nextjs.org/docs/api-routes/introduction
 import { fetchDisplayName, getAuthorizationToken, postUpdateDisplayName } from "@/utils/fetch";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest } from "next/server";
 
 type Data = {
   token: string | null;
@@ -8,35 +9,36 @@ type Data = {
   error?: string | null;
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
-  const email: string = req.body?.email?.trim() || "";
-  const password: string = req.body?.password?.trim() || "";
-  const discriminators: string = req.body?.discriminators?.trim() || "";
+export const POST = async (req: NextRequest, res: NextApiResponse<Data>) => {
+  const { email, password, discriminators } = await req.json();
+
+  // const email: string = req.body?.email?.trim() || "";
+  // const password: string = req.body?.password?.trim() || "";
+  // const discriminators: string = req.body?.discriminators?.trim() || "";
 
   // TODO: Only allow an array of numbers, strip out anything that isn't a 4 digit number
 
-  const token = await getAuthorizationToken(email, password);
-
   console.log(discriminators, password);
 
-  if (!token) {
-    return res.status(400).json({ token, error: "Token cannot be fetched" });
+  if (!discriminators) {
+    return Response.json({ error: "Discriminators field is invalid" }, { status: 400 });
+  } else if (!email) {
+    return Response.json({ error: "Email field is invalid" }, { status: 400 });
+  } else if (!password) {
+    return Response.json({ error: "Password field is invalid" }, { status: 400 });
   }
 
-  if (!discriminators) {
-    return res.status(400).json({ token, error: "Discriminators field is invalid" });
-  } else if (!email) {
-    return res.status(400).json({ token, error: "Email field is invalid" });
-  } else if (!password) {
-    return res.status(400).json({ token, error: "Password field is invalid" });
+  const token = await getAuthorizationToken(email, password);
+
+  if (!token) {
+    return Response.json({ error: "Token cannot be fetched" }, { status: 400 });
   }
 
   const splitDiscriminators = discriminators.split(", ");
-  res.status(200).json({ discriminators: splitDiscriminators, token });
 
   handleChangeDisplayNameInterval(token, splitDiscriminators, 0.7);
-  res.status(200).json({ discriminators: splitDiscriminators, token });
-}
+  return Response.json({ discriminators: splitDiscriminators, token }, { status: 200 });
+};
 
 const handleChangeDisplayNameInterval = (token: string, discriminators: string[], intervalTime: number = 1) => {
   const changeDisplayNameInterval = setInterval(() => {
@@ -52,8 +54,6 @@ const handleChangeDisplayNameInterval = (token: string, discriminators: string[]
       const discriminator = displayName?.split("#")?.[1] || "";
       if (discriminators.includes(discriminator)) {
         clearInterval(changeDisplayNameInterval);
-        // const sound = new Audio("https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3");
-        // sound.play();
       } else {
         console.log("postUpdateDisplayName");
         return;
