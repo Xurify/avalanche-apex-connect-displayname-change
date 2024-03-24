@@ -15,7 +15,7 @@ import { fullMatchingDigits } from "@/utils/fetch";
 import { cn } from "@/lib/utils";
 import { ChangeDisplayNameResponse, Errors } from "./api/change-displayname/route";
 
-export const Page: React.FC = () => {
+export default function Page() {
   const [emailAddress, setEmailAddress] = React.useState<string>("");
   const [password, setPassword] = React.useState<string>("");
   const [customDiscriminator, setCustomDiscriminator] = React.useState<string>("");
@@ -48,7 +48,7 @@ export const Page: React.FC = () => {
     if (password.trim() === "") {
       newErrors.password = "Password is missing";
     }
-    if (discriminators.length === 0) {
+    if (!allowMatchingDigits && discriminators.length === 0) {
       newErrors.discriminators = "No discriminators were added";
     }
     return newErrors;
@@ -254,8 +254,6 @@ export const Page: React.FC = () => {
     </div>
   );
 };
-
-export default Page;
 
 const CircleMinus = () => (
   <svg
