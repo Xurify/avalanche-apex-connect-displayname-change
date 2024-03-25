@@ -29,7 +29,7 @@ export default function Page() {
   const [pastDiscriminators, setPastDiscriminators] = React.useState<string[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<Errors | null>({});
 
-  const pastDiscriminatorsListRef = React.useRef<HTMLLIElement>(null);
+  const pastDiscriminatorsListRef = React.useRef<HTMLUListElement>(null);
 
   const handleAuthorize = () => {
     const body = JSON.stringify({ email: emailAddress, password });
@@ -114,11 +114,10 @@ export default function Page() {
           setPastDiscriminators((previousPastDiscriminators) => [...previousPastDiscriminators, data.newDiscriminator]);
           const LIST_ITEM_HEIGHT = 24;
           const scrollHeight = pastDiscriminatorsListRef?.current?.scrollHeight || 0;
-          const newScrollTop = scrollHeight + LIST_ITEM_HEIGHT;
           const clientHeight = pastDiscriminatorsListRef?.current?.clientHeight || 0;
           const scrollTop = pastDiscriminatorsListRef?.current?.scrollTop || 0;
-          const totalHeight = scrollHeight + clientHeight + LIST_ITEM_HEIGHT;
-          console.log("scrollTop", scrollHeight, scrollTop, clientHeight, totalHeight);
+          const newScrollTop = scrollHeight + LIST_ITEM_HEIGHT;
+          console.log("scrollTop", scrollTop, newScrollTop, scrollHeight, clientHeight);
           if ((scrollTop + clientHeight) > (scrollHeight - 25)) {
             pastDiscriminatorsListRef.current?.scrollTo({ behavior: "smooth", top: newScrollTop + LIST_ITEM_HEIGHT });
           }
