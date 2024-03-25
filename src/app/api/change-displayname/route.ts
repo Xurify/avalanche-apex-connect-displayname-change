@@ -66,7 +66,7 @@ const handleChangeDisplayNameInterval = async (
         reject(Response.json({ error: "Bearer token is missing" }, { status: 400 }));
       }
 
-      fetchDisplayName(token).then((displayName) => {
+      fetchDisplayName(token).then(async (displayName) => {
         const nickname = displayName?.split("#")?.[0] || "";
         const discriminator = displayName?.split("#")?.[1] || "";
 
@@ -75,8 +75,12 @@ const handleChangeDisplayNameInterval = async (
           resolve(Response.json({ displayName, newDiscriminator: discriminator }, { status: 200 }));
         } else {
           console.log("postUpdateDisplayName", displayName);
-          postUpdateDisplayName(token, nickname);
-          resolve(Response.json({ newDiscriminator: discriminator }, { status: 200 }));
+          const updateDisplayNameResponse = await postUpdateDisplayName(token, nickname);
+          if (updateDisplayNameResponse?.error) {
+            resolve(Response.json({ newDiscriminator: discriminator }, { status: 500 }));
+          } else {
+            resolve(Response.json({ newDiscriminator: discriminator }, { status: 200 }));
+          }
         }
       });
     }, intervalTime * 1000);
@@ -95,13 +99,12 @@ const handleChangeDisplayNameIntervalStream = async (
       const changeDisplayNameInterval = setInterval(() => {
         if (!token) {
           clearInterval(changeDisplayNameInterval);
-          console.error("Bearer token is missing");
           controller.enqueue(encoder.encode(JSON.stringify({ error: "Bearer token is missing" })));
           controller.close();
           return;
         }
 
-        fetchDisplayName(token).then((displayName) => {
+        fetchDisplayName(token).then(async (displayName) => {
           const nickname = displayName?.split("#")?.[0] || "";
           const discriminator = displayName?.split("#")?.[1] || "";
 
@@ -111,8 +114,13 @@ const handleChangeDisplayNameIntervalStream = async (
             controller.close();
           } else {
             console.log("postUpdateDisplayName", displayName);
-            postUpdateDisplayName(token, nickname);
-            controller.enqueue(encoder.encode(JSON.stringify({ newDiscriminator: discriminator })));
+            const updateDisplayNameResponse = await postUpdateDisplayName(token, nickname);
+            if (updateDisplayNameResponse?.error) {
+              clearInterval(changeDisplayNameInterval);
+              controller.close();
+            } else {
+              controller.enqueue(encoder.encode(JSON.stringify({ newDiscriminator: discriminator })));
+            }
           }
         });
       }, intervalTime * 1000);

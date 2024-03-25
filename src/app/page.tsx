@@ -29,6 +29,8 @@ export default function Page() {
   const [pastDiscriminators, setPastDiscriminators] = React.useState<string[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<Errors | null>({});
 
+  const pastDiscriminatorsListRef = React.useRef<HTMLLIElement>(null);
+
   const handleAuthorize = () => {
     const body = JSON.stringify({ email: emailAddress, password });
 
@@ -100,22 +102,30 @@ export default function Page() {
     let result = "";
     while (true) {
       setIsSearching(true);
-      const { done, value } = await reader?.read();
+      if (!reader) return;
+      const { done, value } = await reader.read();
       if (done) break;
 
       result += decoder.decode(value);
 
       try {
         const data = JSON.parse(result);
-        console.log(data || "");
-        console.log(data.newDiscriminator || "");
         if (data?.newDiscriminator) {
-          setPastDiscriminators([...pastDiscriminators, data.newDiscriminator]);
+          setPastDiscriminators((previousPastDiscriminators) => [...previousPastDiscriminators, data.newDiscriminator]);
+          const LIST_ITEM_HEIGHT = 24;
+          const scrollHeight = pastDiscriminatorsListRef?.current?.scrollHeight || 0;
+          const newScrollTop = scrollHeight + LIST_ITEM_HEIGHT;
+          const clientHeight = pastDiscriminatorsListRef?.current?.clientHeight || 0;
+          const scrollTop = pastDiscriminatorsListRef?.current?.scrollTop || 0;
+          const totalHeight = scrollHeight + clientHeight + LIST_ITEM_HEIGHT;
+          console.log("scrollTop", scrollHeight, scrollTop, clientHeight, totalHeight);
+          if ((scrollTop + clientHeight) > (scrollHeight - 25)) {
+            pastDiscriminatorsListRef.current?.scrollTo({ behavior: "smooth", top: newScrollTop + LIST_ITEM_HEIGHT });
+          }
         }
         if (done) {
           setIsSearching(false);
         }
-        console.log('result', result, done);
         result = "";
       } catch (error) {
         // Ignore JSON parsing errors and continue reading the stream
@@ -275,7 +285,7 @@ export default function Page() {
         <div className="max-w-[500px] w-full">
           <div className="font-medium text-sm mb-2">Running through the numbers:</div>
           <div className="dark:bg-white/10 w-full p-4 rounded relative">
-            <ul className="w-full">
+            <ul className="w-full h-[200px] overflow-y-auto" ref={pastDiscriminatorsListRef}>
               {pastDiscriminators.map((discriminator, index) => (
                 <li key={`${discriminator}-${index}`}>{discriminator}</li>
               ))}
