@@ -3,7 +3,7 @@
 import React from "react";
 
 import { InfoCircledIcon, ReloadIcon } from "@radix-ui/react-icons";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { CircleMinusIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,25 +11,51 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { fullMatchingDigits } from "@/utils/fetch";
 import { ChangeDisplayNameResponse, Errors } from "./api/change-displayname/route";
+import { AuthorizationTokenResponse } from "./api/authorize/route";
+import { useSessionStorage } from "usehooks-ts";
 
 export default function Page() {
   const [emailAddress, setEmailAddress] = React.useState<string>("");
   const [password, setPassword] = React.useState<string>("");
   const [customDiscriminator, setCustomDiscriminator] = React.useState<string>("");
-
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [isPasswordHidden, setIsPasswordHidden] = React.useState<boolean>(true);
   const [allowMatchingDigits, setAllowMatchingDigits] = React.useState<boolean>(false);
   const [discriminators, setDiscriminators] = React.useState<string[]>([]);
 
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [isSearching, setIsSearching] = React.useState<boolean>(false);
+  const [isPasswordHidden, setIsPasswordHidden] = React.useState<boolean>(true);
+
+  const [token, setToken] = useSessionStorage<string | null>("avalanche-apex-connect-token", null);
+  const [pastDiscriminators, setPastDiscriminators] = React.useState<string[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<Errors | null>({});
+
+  const handleAuthorize = () => {
+    const body = JSON.stringify({ email: emailAddress, password });
+
+    fetch("/api/authorize", {
+      body,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((res) => res.json())
+      .then((result: AuthorizationTokenResponse) => {
+        setIsLoading(false);
+        if (result.token) {
+          setToken(result.token);
+        } else if (result.error) {
+          setErrorMessage(result.error);
+        }
+      });
+  };
 
   const collectErrors = (): Errors => {
     const newErrors: Errors = {};
-    if (emailAddress.trim() === "") {
+    if (!token && emailAddress.trim() === "") {
       newErrors.emailAddress = "Email address is missing";
     }
-    if (password.trim() === "") {
+    if (!token && password.trim() === "") {
       newErrors.password = "Password is missing";
     }
     if (!allowMatchingDigits && discriminators.length === 0) {
@@ -38,7 +64,7 @@ export default function Page() {
     return newErrors;
   };
 
-  const handleStart = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleStart = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -53,29 +79,48 @@ export default function Page() {
     setIsLoading(true);
 
     const combinedDiscriminators = allowMatchingDigits ? [...discriminators, ...fullMatchingDigits] : discriminators;
-    const body = JSON.stringify({ email: emailAddress, password, discriminators: combinedDiscriminators.join(", ") });
+    const body = JSON.stringify({
+      email: emailAddress,
+      password,
+      discriminators: combinedDiscriminators.join(", "),
+      token,
+    });
 
-    fetch("/api/change-displayname", {
+    const response = await fetch("/api/change-displayname", {
       body,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-    })
-      .then((res) => res.json())
-      .then((result: ChangeDisplayNameResponse) => {
-        setIsLoading(false);
-        if (result.error) {
-          console.error(result.error);
-          setErrorMessage(result.error);
-        } else {
-          if (result.success) {
-            const sound = new Audio("https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3");
-            sound.play();
-          }
-          console.log(result);
+    });
+
+    const reader = response.body?.getReader();
+    const decoder = new TextDecoder();
+
+    let result = "";
+    while (true) {
+      setIsSearching(true);
+      const { done, value } = await reader?.read();
+      if (done) break;
+
+      result += decoder.decode(value);
+
+      try {
+        const data = JSON.parse(result);
+        console.log(data || "");
+        console.log(data.newDiscriminator || "");
+        if (data?.newDiscriminator) {
+          setPastDiscriminators([...pastDiscriminators, data.newDiscriminator]);
         }
-      });
+        if (done) {
+          setIsSearching(false);
+        }
+        console.log('result', result, done);
+        result = "";
+      } catch (error) {
+        // Ignore JSON parsing errors and continue reading the stream
+      }
+    }
   };
 
   const handleChangeEmailAddress = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,7 +187,6 @@ export default function Page() {
           <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="password">
             Password
           </Label>
-
           <div className="relative">
             <Input
               onChange={handleChangePassword}
@@ -160,6 +204,9 @@ export default function Page() {
             </button>
           </div>
         </div>
+        <Button className="mb-4" onClick={handleAuthorize} disabled={!!token}>
+          {token ? "Authenticated" : "Authenticate"}
+        </Button>
         <div className="mb-2">
           <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="custom-discriminator">
             Custom Discriminator
@@ -203,7 +250,7 @@ export default function Page() {
           {discriminators.map((discriminator) => (
             <li className="flex" key={discriminator}>
               <button onClick={() => handleRemoveDiscriminator(discriminator)}>
-                <CircleMinus />
+                <CircleMinusIcon />
               </button>{" "}
               <span className="ml-2">{discriminator}</span>
             </li>
@@ -223,24 +270,25 @@ export default function Page() {
           ))}
         </div>
       )}
+
+      {pastDiscriminators.length > 0 && (
+        <div className="max-w-[500px] w-full">
+          <div className="font-medium text-sm mb-2">Running through the numbers:</div>
+          <div className="dark:bg-white/10 w-full p-4 rounded relative">
+            <ul className="w-full">
+              {pastDiscriminators.map((discriminator, index) => (
+                <li key={`${discriminator}-${index}`}>{discriminator}</li>
+              ))}
+            </ul>
+            {isSearching && (
+              <span className="flex h-3 w-3 -top-1.5 -right-1.5 absolute">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
-
-const CircleMinus = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="lucide lucide-circle-minus"
-  >
-    <circle cx="12" cy="12" r="10" />
-    <path d="M8 12h8" />
-  </svg>
-);

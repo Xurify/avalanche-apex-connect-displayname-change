@@ -1,12 +1,15 @@
-import { fetchDisplayName, getAuthorizationToken, postUpdateDisplayName } from "@/utils/fetch";
 import type { NextApiResponse } from "next";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { fetchDisplayName, getAuthorizationToken, postUpdateDisplayName } from "@/utils/fetch";
 
-type Data = {
-  token: string | null;
-  discriminators?: string[];
+export interface ChangeDisplayNameResponse {
+  token?: string;
   error?: Errors | null;
-};
+  success?: boolean;
+  discriminators?: string[];
+  newDiscriminator?: string;
+  displayName?: string;
+}
 
 export type Errors = {
   emailAddress?: string;
@@ -14,20 +17,26 @@ export type Errors = {
   discriminators?: string;
 };
 
-export const POST = async (req: NextRequest, res: NextApiResponse<Data>) => {
-  const { email = '', password = '', discriminators = '' }: { email: string; password: string; discriminators: string } = await req.json();
+export const POST = async (req: NextRequest, res: NextApiResponse<ChangeDisplayNameResponse>) => {
+  const {
+    email = "",
+    password = "",
+    discriminators = "",
+    token: derivedToken,
+  }: { email: string; password: string; discriminators: string; token?: string } = await req.json();
 
-  const filteredDiscriminators = discriminators?.split(", ")?.filter((d: string) => /^\d{4}$/.test(d));
-
-  if (!filteredDiscriminators.length) {
-    return Response.json({ error: { discriminators: "Discriminators field is invalid" } }, { status: 400 });
-  } else if (!email) {
-    return Response.json({ error: { emailAddress: "Email field is invalid" } }, { status: 400 });
-  } else if (!password) {
-    return Response.json({ error: { password: "Password field is invalid" } }, { status: 400 });
+  if (!derivedToken) {
+    const filteredDiscriminators = discriminators?.split(", ")?.filter((d: string) => /^\d{4}$/.test(d));
+    if (!filteredDiscriminators.length) {
+      return Response.json({ error: { discriminators: "Discriminators field is invalid" } }, { status: 400 });
+    } else if (!email) {
+      return Response.json({ error: { emailAddress: "Email field is invalid" } }, { status: 400 });
+    } else if (!password) {
+      return Response.json({ error: { password: "Password field is invalid" } }, { status: 400 });
+    }
   }
 
-  const token = await getAuthorizationToken(email, password);
+  const token = derivedToken || (await getAuthorizationToken(email, password));
 
   if (!token) {
     return Response.json({ error: "Token cannot be fetched" }, { status: 400 });
@@ -35,15 +44,14 @@ export const POST = async (req: NextRequest, res: NextApiResponse<Data>) => {
 
   const splitDiscriminators = discriminators.split(", ");
 
-  return await handleChangeDisplayNameInterval(token, splitDiscriminators, 0.7);
-};
+ // return await handleChangeDisplayNameInterval(token, splitDiscriminators, 0.7);
 
-export interface ChangeDisplayNameResponse {
-  error: Errors;
-  success?: boolean;
-  token?: string;
-  newDiscriminator?: string;
-}
+ const response = await handleChangeDisplayNameIntervalStream(token, splitDiscriminators, 5);
+ console.log('response', response);
+
+ return response;
+  //return await handleChangeDisplayNameIntervalStream(token, splitDiscriminators, 0.7);
+};
 
 const handleChangeDisplayNameInterval = async (
   token: string,
@@ -72,5 +80,46 @@ const handleChangeDisplayNameInterval = async (
         }
       });
     }, intervalTime * 1000);
+  });
+};
+
+const handleChangeDisplayNameIntervalStream = async (
+  token: string,
+  discriminators: string[],
+  intervalTime: number = 1
+) => {
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+
+      const changeDisplayNameInterval = setInterval(() => {
+        if (!token) {
+          clearInterval(changeDisplayNameInterval);
+          console.error("Bearer token is missing");
+          controller.enqueue(encoder.encode(JSON.stringify({ error: "Bearer token is missing" })));
+          controller.close();
+          return;
+        }
+
+        fetchDisplayName(token).then((displayName) => {
+          const nickname = displayName?.split("#")?.[0] || "";
+          const discriminator = displayName?.split("#")?.[1] || "";
+
+          if (discriminators.includes(discriminator)) {
+            clearInterval(changeDisplayNameInterval);
+            controller.enqueue(encoder.encode(JSON.stringify({ displayName, newDiscriminator: discriminator })));
+            controller.close();
+          } else {
+            console.log("postUpdateDisplayName", displayName);
+            postUpdateDisplayName(token, nickname);
+            controller.enqueue(encoder.encode(JSON.stringify({ newDiscriminator: discriminator })));
+          }
+        });
+      }, intervalTime * 1000);
+    },
+  });
+
+  return new NextResponse(stream, {
+    headers: { "Content-Type": "application/json" },
   });
 };

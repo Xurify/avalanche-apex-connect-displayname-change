@@ -134,7 +134,6 @@ export const getAuthorizationToken = async (email: string, password: string): Pr
   })
     .then((res) => res.json())
     .then((response: LoginResponse) => {
-      console.log("getAuthorizationToken", response?.token);
       return response?.token ?? null;
     });
 };
