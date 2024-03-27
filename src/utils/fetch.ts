@@ -54,7 +54,7 @@ export const fetchDisplayName = async (token: string): Promise<string | null> =>
 };
 
 // TODO: Verify this response
-export const postUpdateDisplayName = async (token: string, nickname: string): Promise<{ error: 'Unauthorized' } | null> => {
+export const postUpdateDisplayName = async (token: string, nickname: string): Promise<{ nick_name?: string; error?: 'Unauthorized' } | null> => {
   return await fetch("https://apex-connect.avalanchestudios.com/api/v1/account/change_nick_name", {
     headers: {
       accept: "application/json, text/plain, */*",

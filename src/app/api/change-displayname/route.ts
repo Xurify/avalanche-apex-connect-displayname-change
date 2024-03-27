@@ -47,45 +47,26 @@ export const POST = async (req: NextRequest, res: NextApiResponse<ChangeDisplayN
  // return await handleChangeDisplayNameInterval(token, splitDiscriminators, 0.7);
 
  const response = await handleChangeDisplayNameIntervalStream(token, splitDiscriminators, 5);
- console.log('response', response);
 
  return response;
-  //return await handleChangeDisplayNameIntervalStream(token, splitDiscriminators, 0.7);
 };
 
-const handleChangeDisplayNameInterval = async (
-  token: string,
-  discriminators: string[],
-  intervalTime: number = 1
-): Promise<Response> => {
-  return new Promise((resolve, reject) => {
-    const changeDisplayNameInterval = setInterval(() => {
-      if (!token) {
-        clearInterval(changeDisplayNameInterval);
-        console.error("Bearer token is missing");
-        reject(Response.json({ error: "Bearer token is missing" }, { status: 400 }));
-      }
+const activeIntervals = new Map<string, NodeJS.Timeout>();
 
-      fetchDisplayName(token).then(async (displayName) => {
-        const nickname = displayName?.split("#")?.[0] || "";
-        const discriminator = displayName?.split("#")?.[1] || "";
-
-        if (discriminators.includes(discriminator)) {
-          clearInterval(changeDisplayNameInterval);
-          resolve(Response.json({ displayName, newDiscriminator: discriminator }, { status: 200 }));
-        } else {
-          console.log("postUpdateDisplayName", displayName);
-          const updateDisplayNameResponse = await postUpdateDisplayName(token, nickname);
-          if (updateDisplayNameResponse?.error) {
-            resolve(Response.json({ newDiscriminator: discriminator }, { status: 500 }));
-          } else {
-            resolve(Response.json({ newDiscriminator: discriminator }, { status: 200 }));
-          }
-        }
-      });
-    }, intervalTime * 1000);
-  });
+const removeInterval = (intervalId: string) => {
+  const interval = activeIntervals.get(intervalId);
+  if (interval) {
+    clearInterval(interval);
+    activeIntervals.delete(intervalId);
+  }
 };
+
+// const clearAllIntervals = () => {
+//   for (const userId in intervals) {
+//     clearInterval(intervals[userId]);
+//     delete intervals[userId];
+//   }
+// };
 
 const handleChangeDisplayNameIntervalStream = async (
   token: string,
@@ -97,8 +78,10 @@ const handleChangeDisplayNameIntervalStream = async (
       const encoder = new TextEncoder();
 
       const changeDisplayNameInterval = setInterval(() => {
+        
         if (!token) {
           clearInterval(changeDisplayNameInterval);
+          removeInterval(intervalId);
           controller.enqueue(encoder.encode(JSON.stringify({ error: "Bearer token is missing" })));
           controller.close();
           return;
@@ -124,6 +107,9 @@ const handleChangeDisplayNameIntervalStream = async (
           }
         });
       }, intervalTime * 1000);
+
+      const intervalId = `${token}-${Date.now()}`;
+      activeIntervals.set(intervalId, changeDisplayNameInterval);
     },
   });
 
@@ -131,3 +117,37 @@ const handleChangeDisplayNameIntervalStream = async (
     headers: { "Content-Type": "application/json" },
   });
 };
+
+// const handleChangeDisplayNameInterval = async (
+//   token: string,
+//   discriminators: string[],
+//   intervalTime: number = 1
+// ): Promise<Response> => {
+//   return new Promise((resolve, reject) => {
+//     const changeDisplayNameInterval = setInterval(() => {
+//       if (!token) {
+//         clearInterval(changeDisplayNameInterval);
+//         console.error("Bearer token is missing");
+//         reject(Response.json({ error: "Bearer token is missing" }, { status: 400 }));
+//       }
+
+//       fetchDisplayName(token).then(async (displayName) => {
+//         const nickname = displayName?.split("#")?.[0] || "";
+//         const discriminator = displayName?.split("#")?.[1] || "";
+
+//         if (discriminators.includes(discriminator)) {
+//           clearInterval(changeDisplayNameInterval);
+//           resolve(Response.json({ displayName, newDiscriminator: discriminator }, { status: 200 }));
+//         } else {
+//           console.log("postUpdateDisplayName", displayName);
+//           const updateDisplayNameResponse = await postUpdateDisplayName(token, nickname);
+//           if (updateDisplayNameResponse?.error) {
+//             resolve(Response.json({ newDiscriminator: discriminator }, { status: 500 }));
+//           } else {
+//             resolve(Response.json({ newDiscriminator: discriminator }, { status: 200 }));
+//           }
+//         }
+//       });
+//     }, intervalTime * 1000);
+//   });
+// };

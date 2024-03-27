@@ -181,7 +181,7 @@ export default function Page() {
     <main className="flex flex-col items-center p-4 pt-12">
       <div className="flex flex-col w-full max-w-[500px]">
         <div className="mb-2">
-          <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="email-address">
+          <Label className="mb-0.5 block text-sm" htmlFor="email-address">
             Email
           </Label>
           <Input
@@ -193,7 +193,7 @@ export default function Page() {
           />
         </div>
         <div className="mb-2">
-          <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="password">
+          <Label className="mb-0.5 block text-sm" htmlFor="password">
             Password
           </Label>
           <div className="relative">
@@ -213,11 +213,11 @@ export default function Page() {
             </button>
           </div>
         </div>
-        <Button className="mb-4" onClick={handleAuthorize} disabled={!!token}>
+        <Button className="mb-4 bg-white text-black hover:bg-white/90 text-[#9c9186] dark:text-black" onClick={handleAuthorize} disabled={!!token}>
           {token ? "Authenticated" : "Authenticate"}
         </Button>
         <div className="mb-2">
-          <Label className="mb-0.5 block text-sm LATER-text-[#B2B7FD]" htmlFor="custom-discriminator">
+          <Label className="mb-0.5 block text-sm" htmlFor="custom-discriminator">
             Custom Discriminator
           </Label>
           <div className="flex">
