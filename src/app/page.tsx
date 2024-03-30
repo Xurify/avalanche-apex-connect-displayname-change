@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { fullMatchingDigits } from "@/utils/fetch";
 import { ChangeDisplayNameResponse, Errors } from "./api/change-displayname/route";
 import { AuthorizationTokenResponse } from "./api/authorize/route";
-import { useSessionStorage } from "usehooks-ts";
+import { useSessionStorage } from "@/lib/hooks/useSessionStorage";
 
 export default function Page() {
   const [emailAddress, setEmailAddress] = React.useState<string>("");
@@ -25,7 +25,7 @@ export default function Page() {
   const [isSearching, setIsSearching] = React.useState<boolean>(false);
   const [isPasswordHidden, setIsPasswordHidden] = React.useState<boolean>(true);
 
-  const [token, setToken] = useSessionStorage<string | null>("avalanche-apex-connect-token", null);
+  const [token, setToken] = useSessionStorage<string | null>("avalanche-apex-connect-token", null, { expireIn: 3600 });
   const [pastDiscriminators, setPastDiscriminators] = React.useState<string[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<Errors | null>({});
 
