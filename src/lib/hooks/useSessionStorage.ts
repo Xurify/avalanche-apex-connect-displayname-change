@@ -3,7 +3,6 @@ import type { Dispatch, SetStateAction } from "react";
 import { useEventCallback, useEventListener } from "usehooks-ts";
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface WindowEventMap {
     "session-storage": CustomEvent;
   }
@@ -100,7 +99,7 @@ export function useSessionStorage<T>(
     try {
       const newValue = value instanceof Function ? value(readValue()) : value;
       window.sessionStorage.setItem(key, serializer(newValue));
-      
+
       if (expireIn) {
         const expirationTime = Date.now() + expireIn * 1000;
         window.sessionStorage.setItem(`${key}_expiration`, expirationTime.toString());
