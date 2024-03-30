@@ -46,7 +46,7 @@ export const POST = async (req: NextRequest, res: NextApiResponse<ChangeDisplayN
 
  // return await handleChangeDisplayNameInterval(token, splitDiscriminators, 0.7);
 
- const response = await handleChangeDisplayNameIntervalStream(token, splitDiscriminators, 5);
+ const response = await handleChangeDisplayNameIntervalStream(token, splitDiscriminators, 0.7);
 
  return response;
 };
