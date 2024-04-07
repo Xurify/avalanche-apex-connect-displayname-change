@@ -9,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { fullMatchingDigits } from "@/utils/fetch";
+import { Account, fullMatchingDigits } from "@/utils/fetch";
 import { ChangeDisplayNameResponse, Errors } from "./api/change-displayname/route";
 import { AuthorizationTokenResponse } from "./api/authorize/route";
 import { useSessionStorage } from "@/lib/hooks/useSessionStorage";
+import { AccountDetailsResponse } from "./api/account-details/route";
 
 export default function Page() {
   const [emailAddress, setEmailAddress] = React.useState<string>("");
@@ -26,6 +27,7 @@ export default function Page() {
   const [isPasswordHidden, setIsPasswordHidden] = React.useState<boolean>(true);
 
   const [token, setToken] = useSessionStorage<string | null>("avalanche-apex-connect-token", null, { expireIn: 3600 });
+  const [account, setAccount] = useSessionStorage<Account | null>("avalanche-apex-connect-account-details", null, { expireIn: 3600 });
   const [pastDiscriminators, setPastDiscriminators] = React.useState<string[]>([]);
   const [errorMessage, setErrorMessage] = React.useState<Errors | null>({});
 
@@ -46,6 +48,24 @@ export default function Page() {
         setIsLoading(false);
         if (result.token) {
           setToken(result.token);
+        } else if (result.error) {
+          setErrorMessage(result.error);
+        }
+      });
+
+    fetch("/api/account-details", {
+      body,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((res) => res.json())
+      .then((result: AccountDetailsResponse) => {
+        setIsLoading(false);
+        if (result.account) {
+          console.log(result.account);
+          setAccount(result.account);
         } else if (result.error) {
           setErrorMessage(result.error);
         }
@@ -118,7 +138,7 @@ export default function Page() {
           const scrollTop = pastDiscriminatorsListRef?.current?.scrollTop || 0;
           const newScrollTop = scrollHeight + LIST_ITEM_HEIGHT;
           console.log("scrollTop", scrollTop, newScrollTop, scrollHeight, clientHeight);
-          if ((scrollTop + clientHeight) > (scrollHeight - 25)) {
+          if (scrollTop + clientHeight > scrollHeight - 25) {
             pastDiscriminatorsListRef.current?.scrollTo({ behavior: "smooth", top: newScrollTop + LIST_ITEM_HEIGHT });
           }
         }
@@ -167,6 +187,8 @@ export default function Page() {
     setIsPasswordHidden(!isPasswordHidden);
   };
 
+  const handleUnauthorize = () => setToken(null);
+
   const buttonClassname = "bg-theme dark:bg-blue-500 hover:bg-[#f7c0c3] dark:hover:bg-blue-600 dark:text-white";
   const inputClassname =
     "p-2 focus:outline-none font-semibold bg-[#d6ccc2] dark:bg-white/10 text-[#976A6D] dark:text-white";
@@ -213,8 +235,15 @@ export default function Page() {
             </button>
           </div>
         </div>
-        <Button className="mb-4 bg-white text-black hover:bg-white/90 text-[#9c9186] dark:text-black" onClick={handleAuthorize} disabled={!!token}>
-          {token ? "Authenticated" : "Authenticate"}
+        <Button
+          className={`mb-4 ${
+            !!token
+              ? "bg-red-500 text-black hover:bg-white/90 dark:text-black"
+              : "bg-white hover:bg-white/90 text-[#9c9186] dark:text-black"
+          }`}
+          onClick={!!token ? handleUnauthorize : handleAuthorize}
+        >
+          {token ? "Unauthenticate" : "Authenticate"}
         </Button>
         <div className="mb-2">
           <Label className="mb-0.5 block text-sm" htmlFor="custom-discriminator">

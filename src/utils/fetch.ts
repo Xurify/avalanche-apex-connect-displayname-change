@@ -1,27 +1,58 @@
 export const fullMatchingDigits = ["0000", "1111", "2222", "3333", "4444", "5555", "6666", "7777", "8888", "9999"];
 
 export interface AccountResponse {
-  account: {
-    id: string;
-    email: string;
-    nick_name: string;
-    updated_at: Date;
-    state: number;
-    promo_email_ok: boolean;
-    language: string;
-    mark_delete_ts: MarkDeleteTimestamp;
-    temporary: boolean;
-    email_verified: boolean;
-    country_code: string;
-    nickname_number: number;
-    display_name: string;
-  };
+  account: Account;
+}
+
+export interface Account {
+  id: string;
+  email: string;
+  nick_name: string;
+  updated_at: Date;
+  state: number;
+  promo_email_ok: boolean;
+  language: string;
+  mark_delete_ts: MarkDeleteTimestamp;
+  temporary: boolean;
+  email_verified: boolean;
+  country_code: string;
+  nickname_number: number;
+  display_name: string;
 }
 
 export interface MarkDeleteTimestamp {
   time: Date;
   valid: boolean;
 }
+
+export const fetchAccount = async (token: string): Promise<Account | null> => {
+  return await fetch("https://apex-connect.avalanchestudios.com/api/v1/account", {
+    headers: {
+      accept: "application/json, text/plain, */*",
+      "accept-language": "en-US,en;q=0.5",
+      "cache-control": "no-cache",
+      pragma: "no-cache",
+      "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Brave";v="122"',
+      "sec-ch-ua-mobile": "?0",
+      "sec-ch-ua-platform": '"Windows"',
+      "sec-fetch-dest": "empty",
+      "sec-fetch-mode": "cors",
+      "sec-fetch-site": "same-origin",
+      "sec-gpc": "1",
+      "x-ava-authorization": `Bearer ${token}`,
+    },
+    referrer: "https://apex-connect.avalanchestudios.com/settings",
+    referrerPolicy: "strict-origin-when-cross-origin",
+    body: null,
+    method: "GET",
+    mode: "cors",
+    credentials: "omit",
+  })
+    .then((res) => res.json())
+    .then((response: AccountResponse) => {
+      return response?.account ?? null;
+    });
+};
 
 export const fetchDisplayName = async (token: string): Promise<string | null> => {
   return await fetch("https://apex-connect.avalanchestudios.com/api/v1/account", {
@@ -54,7 +85,10 @@ export const fetchDisplayName = async (token: string): Promise<string | null> =>
 };
 
 // TODO: Verify this response
-export const postUpdateDisplayName = async (token: string, nickname: string): Promise<{ nick_name?: string; error?: 'Unauthorized' } | null> => {
+export const postUpdateDisplayName = async (
+  token: string,
+  nickname: string
+): Promise<{ nick_name?: string; error?: "Unauthorized" } | null> => {
   return await fetch("https://apex-connect.avalanchestudios.com/api/v1/account/change_nick_name", {
     headers: {
       accept: "application/json, text/plain, */*",
