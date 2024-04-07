@@ -238,7 +238,7 @@ export default function Page() {
         <Button
           className={`mb-4 ${
             !!token
-              ? "bg-red-500 text-black hover:bg-white/90 dark:text-black"
+              ? "bg-red-500 dark:text-black hover:bg-red-400 dark:text-black"
               : "bg-white hover:bg-white/90 text-[#9c9186] dark:text-black"
           }`}
           onClick={!!token ? handleUnauthorize : handleAuthorize}

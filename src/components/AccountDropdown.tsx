@@ -17,12 +17,13 @@ import { useSessionStorage } from "@/lib/hooks/useSessionStorage";
 import { Account } from "@/utils/fetch";
 
 export const AccountDropdown = () => {
-  const [account] = useSessionStorage<Account | null>("avalanche-apex-connect-account-details", null, {
+  const [account, setAccount] = useSessionStorage<Account | null>("avalanche-apex-connect-account-details", null, {
     expireIn: 3600,
   });
 
   const handleUnauthenticate = () => {
-    window.localStorage.removeItem("avalanche-apex-connect-token");
+    window.sessionStorage.removeItem("avalanche-apex-connect-token");
+    setAccount(null);
   };
 
   if (!account) return null;
