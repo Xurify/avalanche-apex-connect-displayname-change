@@ -95,7 +95,7 @@ export default function Page() {
                 console.log(result.account);
                 setAccount(result.account);
               } else if (result.error) {
-                console.log(result.error);
+                console.error(result.error);
                 setErrorMessage({ general: result.error });
               }
             });
@@ -175,13 +175,6 @@ export default function Page() {
             pastDiscriminatorsListRef?.current?.clientHeight || 0;
           const scrollTop = pastDiscriminatorsListRef?.current?.scrollTop || 0;
           const newScrollTop = scrollHeight + LIST_ITEM_HEIGHT;
-          console.log(
-            "scrollTop",
-            scrollTop,
-            newScrollTop,
-            scrollHeight,
-            clientHeight,
-          );
           if (scrollTop + clientHeight > scrollHeight - 25) {
             pastDiscriminatorsListRef.current?.scrollTo({
               behavior: "smooth",
@@ -333,7 +326,10 @@ export default function Page() {
             className="mb-0.5 block text-sm"
             htmlFor="custom-discriminator"
           >
-            Custom Discriminator
+            Custom Discriminator(s) <br />
+            <span className="text-xs text-gray-500">
+              Numbers that you would like to use for your name
+            </span>
           </Label>
           <div className="flex">
             <Input
