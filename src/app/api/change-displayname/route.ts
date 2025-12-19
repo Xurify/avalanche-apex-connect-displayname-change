@@ -135,7 +135,6 @@ const handleChangeDisplayNameIntervalStream = async (
             );
             controller.close();
           } else {
-            console.log("postUpdateDisplayName", displayName);
             const updateDisplayNameResponse = await postUpdateDisplayName(
               token,
               nickname,

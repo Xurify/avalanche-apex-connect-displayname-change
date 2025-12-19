@@ -67,7 +67,6 @@ export const fetchAccount = async (token: string): Promise<Account | null> => {
     )
       .then((res) => res.json())
       .then((response: AccountResponse) => {
-        console.log(response);
         return response?.account ?? null;
       });
   } catch (error) {
