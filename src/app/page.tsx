@@ -358,7 +358,7 @@ export default function Page() {
               onCheckedChange={handleCheckAllowMatchingDigits}
             />
             <Label className="ml-2" htmlFor="allow-matching-digits text-center">
-              Allow Matching Digits
+              Allow Any Matching Digits
             </Label>
           </div>
           <span className="text-sm text-[#9c9186]/70 dark:text-gray-400 mt-1">
