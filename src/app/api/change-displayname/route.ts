@@ -60,7 +60,8 @@ export const POST = async (
     }
   }
 
-  const token = derivedToken || (await getAuthorizationToken(email, password));
+  const token =
+    derivedToken || (await getAuthorizationToken(email, password))?.token;
 
   if (!token) {
     return Response.json({ error: "Token cannot be fetched" }, { status: 400 });
