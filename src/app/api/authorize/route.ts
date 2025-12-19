@@ -6,16 +6,31 @@ import { Errors } from "../change-displayname/route";
 export interface AuthorizationTokenResponse {
   token: string | null;
   discriminators?: string[];
-  error?: Errors | null;
-};
+  error?: string | null;
+}
 
-export const POST = async (req: NextRequest, res: NextApiResponse<AuthorizationTokenResponse>) => {
-  const { email = "", password = "" }: { email: string; password: string } = await req.json();
+export const POST = async (
+  req: NextRequest,
+  res: NextApiResponse<AuthorizationTokenResponse>,
+) => {
+  const { email = "", password = "" }: { email: string; password: string } =
+    await req.json();
 
-  const token = await getAuthorizationToken(email, password);
-
-  if (!token) {
-    return Response.json({ error: "Token cannot be fetched" }, { status: 400 });
+  if (!email) {
+    return Response.json({ error: "Email is required" }, { status: 400 });
   }
-  return Response.json({ token }, { status: 200 });
+
+  if (!password) {
+    return Response.json({ error: "Password is required" }, { status: 400 });
+  }
+
+  const tokenResponse = await getAuthorizationToken(email, password);
+
+  if (tokenResponse.error) {
+    return Response.json(
+      { error: tokenResponse.error || "Failed to get token" },
+      { status: 400 },
+    );
+  }
+  return Response.json({ token: tokenResponse.token }, { status: 200 });
 };

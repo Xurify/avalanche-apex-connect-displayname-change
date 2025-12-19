@@ -1,24 +1,36 @@
 import type { NextApiResponse } from "next";
 import { NextRequest } from "next/server";
 import { Account, fetchAccount, getAuthorizationToken } from "@/utils/fetch";
-import { Errors } from "../change-displayname/route";
 
 export interface AccountDetailsResponse {
   account: Account | null;
-  error?: Errors | null;
+  error?: string | null;
 }
 
-export const POST = async (req: NextRequest, res: NextApiResponse<AccountDetailsResponse>) => {
-  const { email = "", password = "" }: { email: string; password: string } = await req.json();
+export const POST = async (
+  req: NextRequest,
+  res: NextApiResponse<AccountDetailsResponse>,
+) => {
+  const { email = "", password = "" }: { email: string; password: string } =
+    await req.json();
 
-  const token = await getAuthorizationToken(email, password);
-
-  if (!token) {
-    return Response.json({ error: "Token cannot be fetched" }, { status: 400 });
+  if (!email) {
+    return Response.json({ error: "Email is required" }, { status: 400 });
   }
 
-  const account = await fetchAccount(token);
-  return Response.json({ account }, { status: 200 });
+  if (!password) {
+    return Response.json({ error: "Password is required" }, { status: 400 });
+  }
 
-  return Response.json({ nickname: null, error: 'Unknown error' }, { status: 500 });
+  const tokenResponse = await getAuthorizationToken(email, password);
+
+  if (tokenResponse.error && !tokenResponse.token) {
+    return Response.json(
+      { error: tokenResponse.error || "Unknown error" },
+      { status: 400 },
+    );
+  }
+
+  const account = await fetchAccount(tokenResponse.token || "");
+  return Response.json({ account }, { status: 200 });
 };

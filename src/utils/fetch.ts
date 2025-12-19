@@ -1,7 +1,19 @@
-export const fullMatchingDigits = ["0000", "1111", "2222", "3333", "4444", "5555", "6666", "7777", "8888", "9999"];
+export const fullMatchingDigits = [
+  "0000",
+  "1111",
+  "2222",
+  "3333",
+  "4444",
+  "5555",
+  "6666",
+  "7777",
+  "8888",
+  "9999",
+];
 
 export interface AccountResponse {
   account: Account;
+  error?: "Unauthorized";
 }
 
 export interface Account {
@@ -26,97 +38,135 @@ export interface MarkDeleteTimestamp {
 }
 
 export const fetchAccount = async (token: string): Promise<Account | null> => {
-  return await fetch("https://apex-connect.avalanchestudios.com/api/v1/account", {
-    headers: {
-      accept: "application/json, text/plain, */*",
-      "accept-language": "en-US,en;q=0.5",
-      "cache-control": "no-cache",
-      pragma: "no-cache",
-      "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Brave";v="122"',
-      "sec-ch-ua-mobile": "?0",
-      "sec-ch-ua-platform": '"Windows"',
-      "sec-fetch-dest": "empty",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-site": "same-origin",
-      "sec-gpc": "1",
-      "x-ava-authorization": `Bearer ${token}`,
-    },
-    referrer: "https://apex-connect.avalanchestudios.com/settings",
-    referrerPolicy: "strict-origin-when-cross-origin",
-    body: null,
-    method: "GET",
-    mode: "cors",
-    credentials: "omit",
-  })
-    .then((res) => res.json())
-    .then((response: AccountResponse) => {
-      return response?.account ?? null;
-    });
+  try {
+    return await fetch(
+      "https://apex-connect.avalanchestudios.com/api/v1/account",
+      {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          "accept-language": "en-US,en;q=0.5",
+          "cache-control": "no-cache",
+          pragma: "no-cache",
+          "sec-ch-ua":
+            '"Chromium";v="122", "Not(A:Brand";v="24", "Brave";v="122"',
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": '"Windows"',
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-origin",
+          "sec-gpc": "1",
+          "x-ava-authorization": `Bearer ${token}`,
+        },
+        referrer: "https://apex-connect.avalanchestudios.com/settings",
+        referrerPolicy: "strict-origin-when-cross-origin",
+        body: null,
+        method: "GET",
+        mode: "cors",
+        credentials: "omit",
+      },
+    )
+      .then((res) => res.json())
+      .then((response: AccountResponse) => {
+        console.log(response);
+        return response?.account ?? null;
+      });
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
 };
 
-export const fetchDisplayName = async (token: string): Promise<string | null> => {
-  return await fetch("https://apex-connect.avalanchestudios.com/api/v1/account", {
-    headers: {
-      accept: "application/json, text/plain, */*",
-      "accept-language": "en-US,en;q=0.5",
-      "cache-control": "no-cache",
-      pragma: "no-cache",
-      "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Brave";v="122"',
-      "sec-ch-ua-mobile": "?0",
-      "sec-ch-ua-platform": '"Windows"',
-      "sec-fetch-dest": "empty",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-site": "same-origin",
-      "sec-gpc": "1",
-      "x-ava-authorization": `Bearer ${token}`,
-    },
-    referrer: "https://apex-connect.avalanchestudios.com/settings",
-    referrerPolicy: "strict-origin-when-cross-origin",
-    body: null,
-    method: "GET",
-    mode: "cors",
-    credentials: "omit",
-  })
-    .then((res) => res.json())
-    .then((response: AccountResponse) => {
-      console.log("fetchDisplayName", response?.account?.display_name);
-      return response?.account?.display_name ?? null;
-    });
+export const fetchDisplayName = async (
+  token: string,
+): Promise<string | null> => {
+  try {
+    const response = await fetch(
+      "https://apex-connect.avalanchestudios.com/api/v1/account",
+      {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          "accept-language": "en-US,en;q=0.5",
+          "cache-control": "no-cache",
+          pragma: "no-cache",
+          "sec-ch-ua":
+            '"Chromium";v="122", "Not(A:Brand";v="24", "Brave";v="122"',
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": '"Windows"',
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-origin",
+          "sec-gpc": "1",
+          "x-ava-authorization": `Bearer ${token}`,
+        },
+        referrer: "https://apex-connect.avalanchestudios.com/settings",
+        referrerPolicy: "strict-origin-when-cross-origin",
+        body: null,
+        method: "GET",
+        mode: "cors",
+        credentials: "omit",
+      },
+    );
+    const data = await response.json();
+    return data?.account?.display_name ?? null;
+  } catch (error) {
+    console.error("Error fetching display name:", error);
+    return null;
+  }
 };
 
 // TODO: Verify this response
 export const postUpdateDisplayName = async (
   token: string,
-  nickname: string
-): Promise<{ nick_name?: string; error?: "Unauthorized" } | null> => {
-  return await fetch("https://apex-connect.avalanchestudios.com/api/v1/account/change_nick_name", {
-    headers: {
-      accept: "application/json, text/plain, */*",
-      "accept-language": "en-US,en;q=0.5",
-      "cache-control": "no-cache",
-      "content-type": "application/json;charset=UTF-8",
-      pragma: "no-cache",
-      "sec-ch-ua": '"Chromium";v="122", "Not(A:Brand";v="24", "Brave";v="122"',
-      "sec-ch-ua-mobile": "?0",
-      "sec-ch-ua-platform": '"Windows"',
-      "sec-fetch-dest": "empty",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-site": "same-origin",
-      "sec-gpc": "1",
-      "x-ava-authorization": `Bearer ${token}`,
-    },
-    referrer: "https://apex-connect.avalanchestudios.com/settings",
-    referrerPolicy: "strict-origin-when-cross-origin",
-    body: `{"nick_name":"${nickname}"}`,
-    method: "POST",
-    mode: "cors",
-    credentials: "omit",
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      console.log("postUpdateDisplayName", data);
-      return data ?? null;
-    });
+  nickname: string,
+): Promise<{
+  nick_name?: string;
+  error?: "Unauthorized" | "Error updating display name";
+} | null> => {
+  try {
+    const response = await fetch(
+      "https://apex-connect.avalanchestudios.com/api/v1/account/change_nick_name",
+      {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          "accept-language": "en-US,en;q=0.5",
+          "cache-control": "no-cache",
+          "content-type": "application/json;charset=UTF-8",
+          pragma: "no-cache",
+          "sec-ch-ua":
+            '"Chromium";v="122", "Not(A:Brand";v="24", "Brave";v="122"',
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": '"Windows"',
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-origin",
+          "sec-gpc": "1",
+          "x-ava-authorization": `Bearer ${token}`,
+        },
+        referrer: "https://apex-connect.avalanchestudios.com/settings",
+        referrerPolicy: "strict-origin-when-cross-origin",
+        body: `{"nick_name":"${nickname}"}`,
+        method: "POST",
+        mode: "cors",
+        credentials: "omit",
+      },
+    );
+
+    const data = await response.json();
+    if (!data?.error) {
+      return {
+        nick_name: data.nick_name || "",
+      };
+    }
+
+    return {
+      error: data.error || "Error updating display name",
+    };
+  } catch (error) {
+    console.error("Error updating display name:", error);
+    return {
+      error: "Error updating display name",
+    };
+  }
 };
 
 export interface LoginResponse {
@@ -143,31 +193,57 @@ export interface ApprovedPolicy {
   platform_region: string;
 }
 
-export const getAuthorizationToken = async (email: string, password: string): Promise<string | null> => {
-  return await fetch("https://apex-connect.avalanchestudios.com/portal/default/login", {
-    headers: {
-      accept: "application/json, text/plain, */*",
-      "accept-language": "en-US,en;q=0.7",
-      "cache-control": "no-cache",
-      "content-type": "application/json;charset=UTF-8",
-      pragma: "no-cache",
-      "sec-ch-ua": '"Brave";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
-      "sec-ch-ua-mobile": "?0",
-      "sec-ch-ua-platform": '"Windows"',
-      "sec-fetch-dest": "empty",
-      "sec-fetch-mode": "cors",
-      "sec-fetch-site": "same-origin",
-      "sec-gpc": "1",
-    },
-    referrer: "https://apex-connect.avalanchestudios.com/",
-    referrerPolicy: "strict-origin-when-cross-origin",
-    body: `{"email":"${email}","password":"${password}"}`,
-    method: "POST",
-    mode: "cors",
-    credentials: "include",
-  })
-    .then((res) => res.json())
-    .then((response: LoginResponse) => {
-      return response?.token ?? null;
-    });
+export const getAuthorizationToken = async (
+  email: string,
+  password: string,
+): Promise<{ token: string | null; error?: string | null }> => {
+  try {
+    const response = await fetch(
+      "https://apex-connect.avalanchestudios.com/portal/default/login",
+      {
+        headers: {
+          accept: "application/json, text/plain, */*",
+          "accept-language": "en-US,en;q=0.7",
+          "cache-control": "no-cache",
+          "content-type": "application/json;charset=UTF-8",
+          pragma: "no-cache",
+          "sec-ch-ua":
+            '"Brave";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
+          "sec-ch-ua-mobile": "?0",
+          "sec-ch-ua-platform": '"Windows"',
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-origin",
+          "sec-gpc": "1",
+        },
+        referrer: "https://apex-connect.avalanchestudios.com/",
+        referrerPolicy: "strict-origin-when-cross-origin",
+        body: `{"email":"${email}","password":"${password}"}`,
+        method: "POST",
+        mode: "cors",
+        credentials: "include",
+      },
+    );
+
+    const data = await response.json();
+    if (!!data?.token) {
+      return {
+        token: data?.token,
+        error: null,
+      };
+    } else {
+      const error =
+        data?.error === "Unauthorized" ? "Invalid credentials" : data?.error;
+      return {
+        token: null,
+        error: error ?? "Unknown error",
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching authorization token:", error);
+    return {
+      token: null,
+      error: "Failed to fetch token",
+    };
+  }
 };

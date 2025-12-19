@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Account, fullMatchingDigits } from "@/utils/fetch";
-import { ChangeDisplayNameResponse, Errors } from "./api/change-displayname/route";
+import {
+  ChangeDisplayNameResponse,
+  Errors,
+} from "./api/change-displayname/route";
 import { AuthorizationTokenResponse } from "./api/authorize/route";
 import { useSessionStorage } from "@/lib/hooks/useSessionStorage";
 import { AccountDetailsResponse } from "./api/account-details/route";
@@ -18,22 +21,45 @@ import { AccountDetailsResponse } from "./api/account-details/route";
 export default function Page() {
   const [emailAddress, setEmailAddress] = React.useState<string>("");
   const [password, setPassword] = React.useState<string>("");
-  const [customDiscriminator, setCustomDiscriminator] = React.useState<string>("");
-  const [allowMatchingDigits, setAllowMatchingDigits] = React.useState<boolean>(false);
+  const [customDiscriminator, setCustomDiscriminator] =
+    React.useState<string>("");
+  const [allowMatchingDigits, setAllowMatchingDigits] =
+    React.useState<boolean>(false);
   const [discriminators, setDiscriminators] = React.useState<string[]>([]);
 
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [isSearching, setIsSearching] = React.useState<boolean>(false);
   const [isPasswordHidden, setIsPasswordHidden] = React.useState<boolean>(true);
 
-  const [token, setToken] = useSessionStorage<string | null>("avalanche-apex-connect-token", null, { expireIn: 3600 });
-  const [account, setAccount] = useSessionStorage<Account | null>("avalanche-apex-connect-account-details", null, { expireIn: 3600 });
-  const [pastDiscriminators, setPastDiscriminators] = React.useState<string[]>([]);
+  const [token, setToken] = useSessionStorage<string | null>(
+    "avalanche-apex-connect-token",
+    null,
+    { expireIn: 3600 },
+  );
+  const [account, setAccount] = useSessionStorage<Account | null>(
+    "avalanche-apex-connect-account-details",
+    null,
+    { expireIn: 3600 },
+  );
+  const [pastDiscriminators, setPastDiscriminators] = React.useState<string[]>(
+    [],
+  );
   const [errorMessage, setErrorMessage] = React.useState<Errors | null>({});
 
   const pastDiscriminatorsListRef = React.useRef<HTMLUListElement>(null);
 
   const handleAuthorize = () => {
+    setErrorMessage(null);
+
+    const newErrors = collectErrors();
+    if (newErrors.emailAddress || newErrors.password) {
+      setErrorMessage({
+        emailAddress: newErrors.emailAddress,
+        password: newErrors.password,
+      });
+      return;
+    }
+
     const body = JSON.stringify({ email: emailAddress, password });
 
     fetch("/api/authorize", {
@@ -49,25 +75,30 @@ export default function Page() {
         if (result.token) {
           setToken(result.token);
         } else if (result.error) {
-          setErrorMessage(result.error);
+          setErrorMessage({ general: result.error });
         }
-      });
-
-    fetch("/api/account-details", {
-      body,
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then((res) => res.json())
-      .then((result: AccountDetailsResponse) => {
-        setIsLoading(false);
-        if (result.account) {
-          console.log(result.account);
-          setAccount(result.account);
-        } else if (result.error) {
-          setErrorMessage(result.error);
+        return result;
+      })
+      .then((result: AuthorizationTokenResponse) => {
+        if (result.token) {
+          fetch("/api/account-details", {
+            body,
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
+            .then((res) => res.json())
+            .then((result: AccountDetailsResponse) => {
+              setIsLoading(false);
+              if (result.account) {
+                console.log(result.account);
+                setAccount(result.account);
+              } else if (result.error) {
+                console.log(result.error);
+                setErrorMessage({ general: result.error });
+              }
+            });
         }
       });
   };
@@ -100,7 +131,9 @@ export default function Page() {
 
     setIsLoading(true);
 
-    const combinedDiscriminators = allowMatchingDigits ? [...discriminators, ...fullMatchingDigits] : discriminators;
+    const combinedDiscriminators = allowMatchingDigits
+      ? [...discriminators, ...fullMatchingDigits]
+      : discriminators;
     const body = JSON.stringify({
       email: emailAddress,
       password,
@@ -131,15 +164,29 @@ export default function Page() {
       try {
         const data = JSON.parse(result);
         if (data?.newDiscriminator) {
-          setPastDiscriminators((previousPastDiscriminators) => [...previousPastDiscriminators, data.newDiscriminator]);
+          setPastDiscriminators((previousPastDiscriminators) => [
+            ...previousPastDiscriminators,
+            data.newDiscriminator,
+          ]);
           const LIST_ITEM_HEIGHT = 24;
-          const scrollHeight = pastDiscriminatorsListRef?.current?.scrollHeight || 0;
-          const clientHeight = pastDiscriminatorsListRef?.current?.clientHeight || 0;
+          const scrollHeight =
+            pastDiscriminatorsListRef?.current?.scrollHeight || 0;
+          const clientHeight =
+            pastDiscriminatorsListRef?.current?.clientHeight || 0;
           const scrollTop = pastDiscriminatorsListRef?.current?.scrollTop || 0;
           const newScrollTop = scrollHeight + LIST_ITEM_HEIGHT;
-          console.log("scrollTop", scrollTop, newScrollTop, scrollHeight, clientHeight);
+          console.log(
+            "scrollTop",
+            scrollTop,
+            newScrollTop,
+            scrollHeight,
+            clientHeight,
+          );
           if (scrollTop + clientHeight > scrollHeight - 25) {
-            pastDiscriminatorsListRef.current?.scrollTo({ behavior: "smooth", top: newScrollTop + LIST_ITEM_HEIGHT });
+            pastDiscriminatorsListRef.current?.scrollTo({
+              behavior: "smooth",
+              top: newScrollTop + LIST_ITEM_HEIGHT,
+            });
           }
         }
         if (done) {
@@ -162,7 +209,9 @@ export default function Page() {
     setPassword(value);
   };
 
-  const handleChangeCustomDiscriminator = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeCustomDiscriminator = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const value = e.target.value;
     setCustomDiscriminator(value);
   };
@@ -179,7 +228,9 @@ export default function Page() {
   };
 
   const handleRemoveDiscriminator = (discriminatorToRemove: string) => {
-    const newDiscriminators = discriminators.filter((discriminator) => discriminatorToRemove !== discriminator);
+    const newDiscriminators = discriminators.filter(
+      (discriminator) => discriminatorToRemove !== discriminator,
+    );
     setDiscriminators(newDiscriminators);
   };
 
@@ -187,21 +238,47 @@ export default function Page() {
     setIsPasswordHidden(!isPasswordHidden);
   };
 
-  const handleUnauthorize = () => setToken(null);
+  const handleUnauthorize = () => {
+    setToken(null);
+    setAccount(null);
+  };
 
-  const buttonClassname = "bg-theme dark:bg-blue-500 hover:bg-[#f7c0c3] dark:hover:bg-blue-600 dark:text-white";
+  const buttonClassname =
+    "bg-theme dark:bg-blue-500 hover:bg-[#f7c0c3] dark:hover:bg-blue-600 dark:text-white";
   const inputClassname =
     "p-2 focus:outline-none font-semibold bg-[#d6ccc2] dark:bg-white/10 text-[#976A6D] dark:text-white";
   const switchClassname =
     "data-[state=checked]:bg-theme data-[state=unchecked]:bg-[#FEE7E9] dark:data-[state=checked]:bg-blue-500 dark:data-[state=unchecked]:bg-input";
 
   const generateInputClassname = (hasError: boolean) => {
-    return hasError ? inputClassname + " border border-red-500" : inputClassname;
+    return hasError
+      ? inputClassname + " border border-red-500"
+      : inputClassname;
   };
 
   return (
     <main className="flex flex-col items-center p-4 pt-12">
       <div className="flex flex-col w-full max-w-[500px]">
+        <div className="mb-4">
+          <div className="bg-red-600 text-white font-bold text-center p-1 rounded">
+            Obviously, you should never give out your credentials!!!
+          </div>
+          <div className="text-sm mt-2 text-black dark:text-white">
+            Instead check out the source code:{" "}
+            <a
+              href="https://github.com/Xurify/avalanche-apex-connect-displayname-change"
+              className="text-blue-500 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub
+            </a>
+          </div>
+          <span className="text-sm block -mt-2 text-black dark:text-white">
+            But if you are that flipping <span className="text-lg">🐧</span>{" "}
+            lazy I'm not stopping you...
+          </span>
+        </div>
         <div className="mb-2">
           <Label className="mb-0.5 block text-sm" htmlFor="email-address">
             Email
@@ -209,9 +286,10 @@ export default function Page() {
           <Input
             onChange={handleChangeEmailAddress}
             className={generateInputClassname(!!errorMessage?.emailAddress)}
-            value={emailAddress}
+            value={account?.email || emailAddress}
             type="text"
             id="email-address"
+            disabled={!!token}
           />
         </div>
         <div className="mb-2">
@@ -225,13 +303,18 @@ export default function Page() {
               value={password}
               type={isPasswordHidden ? "password" : "text"}
               id="password"
+              disabled={!!token}
             />
             <button
               type="button"
               onClick={handleTogglePasswordHidden}
               className="absolute top-0 end-0 p-3.5 rounded-e-md dark:focus:outline-none dark:focus:ring-1 dark:focus:ring-gray-600"
             >
-              {isPasswordHidden ? <EyeOffIcon size="0.95rem" /> : <EyeIcon size="0.95rem" />}
+              {isPasswordHidden ? (
+                <EyeOffIcon size="0.95rem" />
+              ) : (
+                <EyeIcon size="0.95rem" />
+              )}
             </button>
           </div>
         </div>
@@ -246,7 +329,10 @@ export default function Page() {
           {token ? "Unauthenticate" : "Authenticate"}
         </Button>
         <div className="mb-2">
-          <Label className="mb-0.5 block text-sm" htmlFor="custom-discriminator">
+          <Label
+            className="mb-0.5 block text-sm"
+            htmlFor="custom-discriminator"
+          >
             Custom Discriminator
           </Label>
           <div className="flex">
@@ -257,12 +343,17 @@ export default function Page() {
               type="text"
               id="custom-discriminator"
             />
-            <Button className={`ml-2 ${buttonClassname}`} onClick={handleAddDiscriminator}>
+            <Button
+              className={`ml-2 ${buttonClassname}`}
+              onClick={handleAddDiscriminator}
+            >
               Add
             </Button>
           </div>
         </div>
-        <span className="text-sm text-[#9c9186]/70 dark:text-gray-400">Separate each discriminator with a comma</span>
+        <span className="text-sm text-[#9c9186]/70 dark:text-gray-400">
+          Separate each discriminator with a comma
+        </span>
         <div>
           <div className="flex items-center mt-2">
             <Switch
@@ -274,9 +365,15 @@ export default function Page() {
               Allow Matching Digits
             </Label>
           </div>
-          <span className="text-sm text-[#9c9186]/70 dark:text-gray-400 mt-1">Ex. 6666, 8888, 2222</span>
+          <span className="text-sm text-[#9c9186]/70 dark:text-gray-400 mt-1">
+            Ex. 6666, 8888, 2222
+          </span>
         </div>
-        <Button className={`mt-2 ${buttonClassname}`} onClick={handleStart} disabled={isLoading}>
+        <Button
+          className={`mt-2 ${buttonClassname}`}
+          onClick={handleStart}
+          disabled={isLoading}
+        >
           {isLoading && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />}
           {isLoading ? "Loading" : "Start"}
         </Button>
@@ -303,7 +400,9 @@ export default function Page() {
               className="bg-red-100 dark:bg-red-50 border border-red-400 dark:border-red-400 px-2 py-1 rounded w-full"
               key={message}
             >
-              <span className="text-red-400 dark:text-red-400 text-sm">{message}</span>
+              <span className="text-red-400 dark:text-red-400 text-sm">
+                {message}
+              </span>
             </div>
           ))}
         </div>
@@ -311,9 +410,14 @@ export default function Page() {
 
       {pastDiscriminators.length > 0 && (
         <div className="max-w-[500px] w-full">
-          <div className="font-medium text-sm mb-2">Running through the numbers:</div>
+          <div className="font-medium text-sm mb-2">
+            Running through the numbers:
+          </div>
           <div className="dark:bg-white/10 w-full p-4 rounded relative">
-            <ul className="w-full h-[200px] overflow-y-auto" ref={pastDiscriminatorsListRef}>
+            <ul
+              className="w-full h-[200px] overflow-y-auto"
+              ref={pastDiscriminatorsListRef}
+            >
               {pastDiscriminators.map((discriminator, index) => (
                 <li key={`${discriminator}-${index}`}>{discriminator}</li>
               ))}

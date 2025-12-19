@@ -17,9 +17,13 @@ import { useSessionStorage } from "@/lib/hooks/useSessionStorage";
 import { Account } from "@/utils/fetch";
 
 export const AccountDropdown = () => {
-  const [account, setAccount] = useSessionStorage<Account | null>("avalanche-apex-connect-account-details", null, {
-    expireIn: 3600,
-  });
+  const [account, setAccount] = useSessionStorage<Account | null>(
+    "avalanche-apex-connect-account-details",
+    null,
+    {
+      expireIn: 3600,
+    },
+  );
 
   const handleUnauthenticate = () => {
     window.sessionStorage.removeItem("avalanche-apex-connect-token");
@@ -31,13 +35,24 @@ export const AccountDropdown = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <UserCircleIcon className="w-6 h-6" role="button" />
+        <div className="flex items-center gap-2 cursor-pointer">
+          <span className="text-sm">{account?.display_name}</span>
+          <UserCircleIcon className="w-6 h-6" role="button" />
+        </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 mr-3 md:mr-12">
         <DropdownMenuLabel>Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {account?.display_name && <DropdownMenuItem disabled>Signed in as {account?.display_name}</DropdownMenuItem>}
-        {<DropdownMenuItem onClick={handleUnauthenticate}>Unauthenticate</DropdownMenuItem>}
+        {account?.display_name && (
+          <DropdownMenuItem disabled>
+            Signed in as {account?.display_name}
+          </DropdownMenuItem>
+        )}
+        {
+          <DropdownMenuItem onClick={handleUnauthenticate}>
+            Unauthenticate
+          </DropdownMenuItem>
+        }
       </DropdownMenuContent>
     </DropdownMenu>
   );
