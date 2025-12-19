@@ -276,7 +276,7 @@ export default function Page() {
           </div>
           <span className="text-sm block -mt-2 text-black dark:text-white">
             But if you are that flipping <span className="text-lg">🐧</span>{" "}
-            lazy I'm not stopping you...
+            lazy I&apos;m not stopping you...
           </span>
         </div>
         <div className="mb-2">
