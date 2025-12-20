@@ -48,6 +48,20 @@ export default function Page() {
 
   const pastDiscriminatorsListRef = React.useRef<HTMLUListElement>(null);
 
+  React.useEffect(() => {
+    if (pastDiscriminators.length > 0) {
+      const listElement = pastDiscriminatorsListRef.current;
+      if (listElement) {
+        requestAnimationFrame(() => {
+          listElement.scrollTo({
+            behavior: "smooth",
+            top: listElement.scrollHeight,
+          });
+        });
+      }
+    }
+  }, [pastDiscriminators]);
+
   const handleAuthorize = () => {
     setErrorMessage(null);
 
@@ -130,6 +144,7 @@ export default function Page() {
     }
 
     setIsLoading(true);
+    setPastDiscriminators([]);
 
     const combinedDiscriminators = allowMatchingDigits
       ? [...discriminators, ...fullMatchingDigits]
@@ -141,55 +156,115 @@ export default function Page() {
       token,
     });
 
-    const response = await fetch("/api/change-displayname", {
-      body,
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-
-    let result = "";
-    while (true) {
-      setIsSearching(true);
-      if (!reader) return;
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      result += decoder.decode(value);
-
+    const performRequest = async (): Promise<void> => {
       try {
-        const data = JSON.parse(result);
-        if (data?.newDiscriminator) {
+
+        const response = await fetch("/api/change-displayname", {
+          body,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.body) {
+          throw new Error("No response body received");
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        let buffer = "";
+        let isCompleted = false;
+
+        try {
+          while (!isCompleted) {
+            setIsSearching(true);
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete lines (JSON objects separated by newlines)
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+            for (const line of lines) {
+              if (line.trim()) {
+                try {
+                  const data = JSON.parse(line.trim());
+
+                  if (data?.success) {
+                    setPastDiscriminators((previousPastDiscriminators) => [
+                      ...previousPastDiscriminators,
+                      data.newDiscriminator,
+                    ]);
+
+                    isCompleted = true;
+                    setIsSearching(false);
+                    setIsLoading(false);
+                    return; // Exit successfully
+                  } else if (data?.error) {
+                    if (data.error.includes('timed out') || data.error.includes('timeout')) {
+                      setPastDiscriminators((previousPastDiscriminators) => [
+                        ...previousPastDiscriminators,
+                        'Retrying...',
+                      ]);
+                      reader.releaseLock();
+                      setTimeout(() => performRequest(), 1000);
+                      return;
+                    } else {
+                      console.error('Error occurred:', data.error);
+                      setErrorMessage({ general: data.error });
+                      isCompleted = true;
+                      setIsSearching(false);
+                      setIsLoading(false);
+                      return;
+                    }
+                  } else if (data?.currentDiscriminator) {
+                    setPastDiscriminators((previousPastDiscriminators) => {
+                      if (!previousPastDiscriminators.includes(data.currentDiscriminator)) {
+                        return [...previousPastDiscriminators, data.currentDiscriminator];
+                      }
+                      return previousPastDiscriminators;
+                    });
+                  }
+                } catch (parseError) {
+                  console.warn("Failed to parse streaming data:", line, parseError);
+                }
+              }
+            }
+          }
+
           setPastDiscriminators((previousPastDiscriminators) => [
             ...previousPastDiscriminators,
-            data.newDiscriminator,
+            'Stream ended, retrying...',
           ]);
-          const LIST_ITEM_HEIGHT = 24;
-          const scrollHeight =
-            pastDiscriminatorsListRef?.current?.scrollHeight || 0;
-          const clientHeight =
-            pastDiscriminatorsListRef?.current?.clientHeight || 0;
-          const scrollTop = pastDiscriminatorsListRef?.current?.scrollTop || 0;
-          const newScrollTop = scrollHeight + LIST_ITEM_HEIGHT;
-          if (scrollTop + clientHeight > scrollHeight - 25) {
-            pastDiscriminatorsListRef.current?.scrollTo({
-              behavior: "smooth",
-              top: newScrollTop + LIST_ITEM_HEIGHT,
-            });
-          }
+          setTimeout(() => performRequest(), 1000);
+
+        } catch (streamError) {
+          console.error('Stream error:', streamError);
+          setPastDiscriminators((previousPastDiscriminators) => [
+            ...previousPastDiscriminators,
+            'Stream error, retrying...',
+          ]);
+          setTimeout(() => performRequest(), 2000);
+        } finally {
+          reader.releaseLock();
         }
-        if (done) {
-          setIsSearching(false);
-        }
-        result = "";
+
       } catch (error) {
-        // Ignore JSON parsing errors and continue reading the stream
+        console.error('Request failed:', error);
+        setPastDiscriminators((previousPastDiscriminators) => [
+          ...previousPastDiscriminators,
+          `Request failed, retrying... (${error instanceof Error ? error.message : String(error)})`,
+        ]);
+        setTimeout(() => performRequest(), 5000);
       }
-    }
+    };
+
+    // Start the first request
+    performRequest();
   };
 
   const handleChangeEmailAddress = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -231,6 +306,7 @@ export default function Page() {
     setIsPasswordHidden(!isPasswordHidden);
   };
 
+
   const handleUnauthorize = () => {
     setToken(null);
     setAccount(null);
@@ -267,9 +343,8 @@ export default function Page() {
               GitHub
             </a>
           </div>
-          <span className="text-sm block -mt-2 text-black dark:text-white">
-            But if you are that flipping <span className="text-lg">🐧</span>{" "}
-            lazy I&apos;m not stopping you...
+          <span className="text-sm block -mt-1 text-black dark:text-white">
+            But if you are that flipping lazy I&apos;m not stopping you...
           </span>
         </div>
         <div className="mb-2">
@@ -407,7 +482,7 @@ export default function Page() {
       {pastDiscriminators.length > 0 && (
         <div className="max-w-[500px] w-full">
           <div className="font-medium text-sm mb-2">
-            Running through the numbers:
+            Past Discriminators:
           </div>
           <div className="dark:bg-white/10 w-full p-4 rounded relative">
             <ul
