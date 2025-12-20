@@ -450,7 +450,7 @@ export default function Page() {
         </Button>
         <div className="flex items-center text-sm text-[#9c9186]/70 dark:text-gray-400 mt-2">
           <InfoCircledIcon />
-          <span className="ml-1">This process could take a while</span>
+          <span className="ml-1">This will probably take a while</span>
         </div>
         <ul className="list-of-discriminators flex flex-col gap-1.5 mt-2">
           {discriminators.map((discriminator) => (
